@@ -7,7 +7,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class CorsConfigurer {
+public class CorsConfigurator {
 
     @Value("${allowed.origins}")
     private String allowedOrigins;
@@ -19,8 +19,10 @@ public class CorsConfigurer {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(allowedOrigins.split(","))
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*");
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                        .allowedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600); // Cache preflight for 1 hour
             }
         };
     }

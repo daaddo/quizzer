@@ -1,5 +1,5 @@
 create database if not exists quizzer;
-
+use quizzer;
 create table if not exists question (
     id int auto_increment primary key,
     title varchar(255) not null,

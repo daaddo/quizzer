@@ -1,19 +1,20 @@
 package it.cascella.quizzer.service;
 
 
-import it.cascella.quizzer.dtos.CreateAnswerDto;
-import it.cascella.quizzer.dtos.CreateQuestionDto;
-import it.cascella.quizzer.dtos.GetAnswerDto;
-import it.cascella.quizzer.dtos.GetQuestionDto;
+import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.Answer;
 import it.cascella.quizzer.entities.Question;
 import it.cascella.quizzer.repository.AnswerRepository;
 import it.cascella.quizzer.repository.QuestionRepository;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class QuestionService {
 
@@ -70,5 +71,21 @@ public class QuestionService {
                                 .map(answer -> new GetAnswerDto(answer.getId(), answer.getAnswer(), answer.getCorrect()))
                                 .toList()))
                 .toList();
+    }
+
+    public void deleteQuestion(Integer id) {
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Question not found with id: " + id));
+        questionRepository.deleteQuestionById(id);
+
+    }
+
+
+    @Modifying
+    @Transactional
+    public void updateQuestion(PutQuestionDTO putQuestionDTO) {
+        log.info("payload: "+putQuestionDTO);
+        questionRepository.updateQuestion(putQuestionDTO.title(), putQuestionDTO.question(), putQuestionDTO.id());
+
     }
 }
