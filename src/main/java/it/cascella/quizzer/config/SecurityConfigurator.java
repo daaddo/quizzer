@@ -68,12 +68,6 @@ public class SecurityConfigurator {
         http.authenticationProvider(authenticationProvider);
         http.formLogin(withDefaults());
 
-        http.rememberMe(r -> r
-                .key(rememberMe)
-                .tokenValiditySeconds(3600*24*7)
-                .useSecureCookie(secure)
-        ).userDetailsService(userService);
-
         http.sessionManagement(sessionManagement -> sessionManagement
                 .sessionFixation().newSession()
                 .invalidSessionUrl("/timeout")
@@ -82,7 +76,6 @@ public class SecurityConfigurator {
                 .expiredUrl("/expired")
         );
 
-        http.addFilterBefore(requestLoggingFilter, AuthorizationFilter.class);
         http.httpBasic(withDefaults());
 
         return http.build();
