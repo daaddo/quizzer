@@ -1,5 +1,7 @@
 package it.cascella.quizzer.config;
 
+import it.cascella.quizzer.entities.Users;
+import it.cascella.quizzer.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -17,11 +19,11 @@ import org.springframework.stereotype.Component;
 public class CustomAuthenticationProvider implements AuthenticationProvider {
     private final PasswordEncoder passwordEncoder;
 
-    private final UserDetailsService userService;
+    private final UserService userService;
 
 
     @Autowired
-    public CustomAuthenticationProvider(PasswordEncoder passwordEncoder, UserDetailsService userService) {
+    public CustomAuthenticationProvider(PasswordEncoder passwordEncoder, UserService userService) {
         this.passwordEncoder = passwordEncoder;
         this.userService = userService;
     }
@@ -32,12 +34,12 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         String password = authentication.getCredentials().toString();
         log.info("User {} requested Authentication", username);
         // Simuliamo un utente (in pratica dovresti usare UserDetailsService per recuperarlo dal DB)
-        UserDetails user = userService.loadUserByUsername(username);
+        Users user = userService.loadUserByUsernameOrEmail(username);
         if (user == null || password == null || password.isEmpty() || username.isEmpty()) {
             throw new BadCredentialsException("Credenziali non valide");
         }
 
-        if (username.equals(user.getUsername()) && passwordEncoder.matches(password, user.getPassword())) {
+        if ((username.equals(user.getUsername()) || username.equals(user.getEmail())) && passwordEncoder.matches(password, user.getPassword())) {
             if (user.getAuthorities() == null || user.getAuthorities().isEmpty()) {
                 throw new BadCredentialsException("Credenziali non valide - nessun ruolo associato");
             }
