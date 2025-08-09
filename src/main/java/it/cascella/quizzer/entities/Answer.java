@@ -6,10 +6,11 @@ import lombok.Data;
 
 
 @Data
-@Entity(name = "answer")
+@Entity
+@Table(name = "answers")
 public class Answer {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
     private Integer id;
 
