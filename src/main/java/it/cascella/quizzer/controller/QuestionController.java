@@ -5,14 +5,17 @@ import it.cascella.quizzer.dtos.CreateQuestionDto;
 import it.cascella.quizzer.dtos.GetQuestionDto;
 import it.cascella.quizzer.dtos.PutQuestionDTO;
 import it.cascella.quizzer.service.QuestionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
+@Slf4j
 @RestController
-@RequestMapping("/api/questions")
+@RequestMapping("/api/v1/questions")
 public class QuestionController {
     private final QuestionService questionService;
 
@@ -34,7 +37,7 @@ public class QuestionController {
 
     @GetMapping("/random")
     public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size) {
-        // Placeholder for future implementation
+        log.info("Fetching a random set of {} questions", size);
         return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size));
     }
 

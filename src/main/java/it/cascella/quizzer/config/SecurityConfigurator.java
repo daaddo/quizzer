@@ -48,22 +48,7 @@ public class SecurityConfigurator {
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/user/id","/api/v1/health/logged","/actuator/env").authenticated()
-                .requestMatchers(
-                        "/api/v1/**",
-                        "/api/v1/generalLayouts/**",
-                        "/api/v1/rooms/**",
-                        "/api/v1/reservation/**",
-                        "/api/v1/table/**",
-                        "/api/v1/clients/**",
-                        "/api/v1/clients/smart-search/**",
-                        "/api/v1/health/**",
-                        "/api/v2/**",
-                        "/actuator/**",
-                        "/error"
-                ).permitAll()
-                .requestMatchers("/api/v1/health/logged","/actuator/env").authenticated()
-
+                .requestMatchers("/api/v1/**").authenticated()
         );
         http.authenticationProvider(authenticationProvider);
         http.formLogin(withDefaults());

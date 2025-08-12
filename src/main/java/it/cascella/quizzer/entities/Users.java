@@ -3,6 +3,7 @@ package it.cascella.quizzer.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -31,6 +32,10 @@ public class Users implements UserDetails {
     @Column(name = "role", nullable = false)
     private Role role;
 
+    @ColumnDefault("1")
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
@@ -43,7 +48,7 @@ public class Users implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return enabled;
     }
 
     @Override

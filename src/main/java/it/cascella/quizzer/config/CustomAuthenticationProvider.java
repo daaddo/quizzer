@@ -36,11 +36,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         if (user == null || password == null || password.isEmpty() || username.isEmpty()) {
             throw new BadCredentialsException("Credenziali non valide");
         }
-
-        if ((username.equals(user.getUsername()) || username.equals(user.getEmail())) && passwordEncoder.matches(password, user.getPassword())) {
-            if (user.getAuthorities() == null || user.getAuthorities().isEmpty()) {
-                throw new BadCredentialsException("Credenziali non valide - nessun ruolo associato");
-            }
+        if ((username.equals(user.getUsername()) || username.equals(user.getEmail())) && user.isAccountNonLocked() && passwordEncoder.matches(password, user.getPassword())) {
+            log.info("User {} authenticated successfully", username);
             return new UsernamePasswordAuthenticationToken(username, password, user.getAuthorities());
         } else {
             throw new BadCredentialsException("Credenziali non valide");
