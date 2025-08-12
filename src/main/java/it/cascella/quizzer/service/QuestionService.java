@@ -60,8 +60,8 @@ public class QuestionService {
                 .toList();
     }
 
-    public List<GetQuestionDto> getRandomSetOfQuestions(Integer size) {
-        List<Question> questions = questionRepository.findRandomQuestions(size);
+    public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,String username) {
+        List<Question> questions = questionRepository.findRandomQuestions(size, username);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),

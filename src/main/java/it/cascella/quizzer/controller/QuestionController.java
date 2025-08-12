@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 
@@ -36,9 +37,10 @@ public class QuestionController {
     }
 
     @GetMapping("/random")
-    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size) {
+    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size, Principal principal) {
         log.info("Fetching a random set of {} questions", size);
-        return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size));
+        log.info("Fetching for {}", principal);
+        return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size,principal.getName()));
     }
 
     @DeleteMapping("/{id}")

@@ -17,9 +17,8 @@ create table if not exists quiz (
 );
 
 INSERT INTO users( username, password, email)
-value ('Claudia','{bcrypt}$2a$12$0qnIRgp6WUmmgddbXlSfGeyjHVdoWoYI/OZh3nZf0PYm6A5wl34iW', 'david.cascella.5@gmail.com');
+value ('Claudia','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXPzxNP4C', 'david.cascella.5@gmail.com');
 
-select * from users
 INSERT INTO quiz (title, description, created_by)
 VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users LIMIT 1));
 

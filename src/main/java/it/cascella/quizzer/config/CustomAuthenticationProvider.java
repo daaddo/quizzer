@@ -31,7 +31,6 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         String username = authentication.getName();
         String password = authentication.getCredentials().toString();
         log.info("User {} requested Authentication", username);
-        // Simuliamo un utente (in pratica dovresti usare UserDetailsService per recuperarlo dal DB)
         Users user = userService.loadUserByUsernameOrEmail(username);
         if (user == null || password == null || password.isEmpty() || username.isEmpty()) {
             throw new BadCredentialsException("Credenziali non valide");

@@ -15,10 +15,18 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
 
 
   @Query(
-        value = "SELECT * FROM question ORDER BY RAND() LIMIT :size",
+        value = """
+        SELECT question.*
+        FROM question
+        JOIN (SELECT * FROM users WHERE email LIKE :username OR username LIKE :username) user
+        ON question.user_id = user.id
+        ORDER BY RAND()
+        LIMIT :size
+"""
+,
         nativeQuery = true
   )
-  List<Question> findRandomQuestions(Integer size);
+  List<Question> findRandomQuestions(Integer size, String username);
 
   @Modifying
   @Transactional
