@@ -52,6 +52,7 @@ public class QuestionService {
             answerEntity.setQuestion(question);
             answerRepository.save(answerEntity);
         }
+        quizRepository.incrementQuestionCount(createQuestionDto.quizId());
         return question.getId();
     }
 
@@ -85,6 +86,7 @@ public class QuestionService {
         questionRepository.findByIdAndUsername(id, principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + id));
         questionRepository.deleteQuestionById(id);
+        quizRepository.decrementQuestionCount(id);
 
     }
 

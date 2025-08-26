@@ -1,5 +1,6 @@
 package it.cascella.quizzer.service;
 
+import it.cascella.quizzer.dtos.UserInformationDTO;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,5 +32,9 @@ public class UserService implements UserDetailsService {
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new UsernameNotFoundException("Username not found: " + username));
+    }
+
+    public UserInformationDTO getUserInformation(String name) {
+
     }
 }

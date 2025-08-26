@@ -13,14 +13,15 @@ create table if not exists quiz (
     title varchar(255) not null,
     description text,
     created_by int not null,
+    questions_count int not null default 0,
     foreign key (created_by) references users(id) on delete cascade
 );
 
 INSERT INTO users( username, password, email)
 value ('Claudia','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXPzxNP4C', 'david.cascella.5@gmail.com');
 
-INSERT INTO quiz (title, description, created_by)
-VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users LIMIT 1));
+INSERT INTO quiz (title, description, created_by,questions_count)
+VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users LIMIT 1),(SELECT COUNT(*) FROM question));
 
 ALTER TABLE question
     ADD COLUMN quiz_id INT ,
@@ -32,6 +33,7 @@ ALTER TABLE question
 
 update question
 set quiz_id = (select id from quiz limit1), user_id = (select id from users limit1);
+
 
 
 ALTER TABLE question
