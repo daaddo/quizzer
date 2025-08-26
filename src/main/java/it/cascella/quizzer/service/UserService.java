@@ -2,6 +2,7 @@ package it.cascella.quizzer.service;
 
 import it.cascella.quizzer.dtos.QuizInformationDTO;
 import it.cascella.quizzer.dtos.UserInformationDTO;
+import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public CustomUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsernameOrEmail(username)
                 .stream()
                 .findFirst()

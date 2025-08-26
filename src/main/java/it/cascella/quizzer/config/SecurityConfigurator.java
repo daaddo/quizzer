@@ -1,17 +1,22 @@
 package it.cascella.quizzer.config;
 
 
+import it.cascella.quizzer.filters.JwtFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -25,6 +30,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfigurator {
+    private final JwtFilter jwtFilter;
+
     @Value("${allowed.origins}" )
     private String allowedOrigins;
 
@@ -38,7 +45,8 @@ public class SecurityConfigurator {
 
 
     @Autowired
-    public SecurityConfigurator(AuthenticationProvider authenticationProvider) {
+    public SecurityConfigurator(JwtFilter jwtFilter, AuthenticationProvider authenticationProvider) {
+        this.jwtFilter = jwtFilter;
         this.authenticationProvider = authenticationProvider;
     }
 
@@ -48,18 +56,20 @@ public class SecurityConfigurator {
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/users/login").permitAll()
+                .requestMatchers("/api/v1/jwt/user/**").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
         );
         http.authenticationProvider(authenticationProvider);
         http.formLogin(withDefaults());
 
         http.sessionManagement(sessionManagement -> sessionManagement
-                .sessionFixation().newSession()
-                .invalidSessionUrl("/timeout")
-                .maximumSessions(5)
-                .maxSessionsPreventsLogin(false)
-                .expiredUrl("/expired")
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) //NON VOGLIAMO SESSIONI PERSISTENTI MA OGNI RICHIESTA DEVE ESSERE AUTENTICATA
+                        .sessionFixation().newSession()
+                        .invalidSessionUrl("/timeout")
+                        .maximumSessions(3) //numero massimo di sessioni per utente
+                        .maxSessionsPreventsLogin(false) // l'effetto sarà che se due utenti sono già loggati al terzo non verrà permesso l'accesso
+                        .expiredUrl("/expired")
+                //pagina a cui verrà reindirizzato l'utente se la sessione è scaduta
         );
         http.rememberMe(rememberMe -> rememberMe
                 .key(rememberMeKey)
@@ -69,11 +79,16 @@ public class SecurityConfigurator {
 
         );
         http.httpBasic(withDefaults());
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
 
         return http.build();
     }
 
-
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         log.info("Allowed origins: {}", allowedOrigins);
