@@ -1,5 +1,6 @@
 package it.cascella.quizzer.service;
 
+import it.cascella.quizzer.dtos.QuizInformationDTO;
 import it.cascella.quizzer.dtos.UserInformationDTO;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.UserRepository;
@@ -8,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 
@@ -35,6 +38,9 @@ public class UserService implements UserDetailsService {
     }
 
     public UserInformationDTO getUserInformation(String name) {
+        Users user = loadUserByUsernameOrEmail(name);
 
+        List<QuizInformationDTO> quizzes = userRepository.getQuizInformationsByUserId(user.getId());
+        return new UserInformationDTO(user.getId(), user.getUsername(), quizzes);
     }
 }

@@ -29,7 +29,7 @@ public class SecurityConfigurator {
     private String allowedOrigins;
 
     @Value("${remember.me.key}")
-    private String rememberMe;
+    private String rememberMeKey;
 
     @Value("${remember.me.secure}")
     private boolean secure;
@@ -48,6 +48,7 @@ public class SecurityConfigurator {
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/users/login").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
         );
         http.authenticationProvider(authenticationProvider);
@@ -60,7 +61,13 @@ public class SecurityConfigurator {
                 .maxSessionsPreventsLogin(false)
                 .expiredUrl("/expired")
         );
+        http.rememberMe(rememberMe -> rememberMe
+                .key(rememberMeKey)
+                .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 days
+                .rememberMeParameter("remember-me")
+                .useSecureCookie(secure)
 
+        );
         http.httpBasic(withDefaults());
 
         return http.build();

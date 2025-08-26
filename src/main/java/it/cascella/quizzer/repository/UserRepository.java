@@ -1,5 +1,6 @@
 package it.cascella.quizzer.repository;
 
+import it.cascella.quizzer.dtos.QuizInformationDTO;
 import it.cascella.quizzer.entities.Users;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -21,4 +22,17 @@ public interface UserRepository extends CrudRepository<Users, Long> {
             nativeQuery = true
     )
     List<Users> findByUsernameOrEmail(String usernameOrEmail);
+
+
+
+    @Query(
+            value = """
+                    SELECT q.id AS id, q.title AS title, q.description AS description, q.question_count AS questionCount
+                    FROM quiz q
+                    JOIN users u ON q.user_id = u.id
+                    WHERE u.id = :id
+                    """,
+            nativeQuery = true
+    )
+    List<QuizInformationDTO> getQuizInformationsByUserId(Integer id);
 }
