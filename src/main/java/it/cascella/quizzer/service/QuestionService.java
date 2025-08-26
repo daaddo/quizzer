@@ -4,6 +4,8 @@ package it.cascella.quizzer.service;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.Answer;
 import it.cascella.quizzer.entities.Question;
+import it.cascella.quizzer.entities.QuizRepository;
+import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.AnswerRepository;
 import it.cascella.quizzer.repository.QuestionRepository;
 import jakarta.transaction.Transactional;
@@ -20,21 +22,27 @@ public class QuestionService {
 
     private final QuestionRepository questionRepository;
     private  final AnswerRepository answerRepository;
+    private final QuizRepository quizRepository;
 
     @Autowired
-    public QuestionService(QuestionRepository questionRepository, AnswerRepository answerRepository) {
+    public QuestionService(QuestionRepository questionRepository, AnswerRepository answerRepository, QuizRepository quizRepository) {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
+        this.quizRepository = quizRepository;
     }
 
-    public Integer createQuestion(CreateQuestionDto createQuestionDto) {
+    public Integer createQuestion(CreateQuestionDto createQuestionDto,String principal) {
 
         Question question = new Question();
-        System.out.println("Creating question with title: " + createQuestionDto.title());
-        System.out.println("Question text: " + createQuestionDto.question());
+
+        Users users = questionRepository.verifyQuizExistsInUser(createQuestionDto.quizId(), principal)
+                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " + principal));
+
 
         question.setTitle(createQuestionDto.title());
         question.setQuestion(createQuestionDto.question());
+        question.setUser(users);
+        question.setQuiz(quizRepository.findQuizById(createQuestionDto.quizId()));
         questionRepository.save(question);
 
         for (CreateAnswerDto answer : createQuestionDto.answers()) {
@@ -47,8 +55,8 @@ public class QuestionService {
         return question.getId();
     }
 
-    public List<GetQuestionDto> getAllQuestions() {
-        List<Question> questions = questionRepository.findAll();
+    public List<GetQuestionDto> getAllQuestions(String principal) {
+        List<Question> questions = questionRepository.findAllFromPrincipal(principal);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
@@ -73,8 +81,8 @@ public class QuestionService {
                 .toList();
     }
 
-    public void deleteQuestion(Integer id) {
-        Question question = questionRepository.findById(id)
+    public void deleteQuestion(Integer id, String principal) {
+        questionRepository.findByIdAndUsername(id, principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + id));
         questionRepository.deleteQuestionById(id);
 
@@ -83,8 +91,10 @@ public class QuestionService {
 
     @Modifying
     @Transactional
-    public void updateQuestion(PutQuestionDTO putQuestionDTO) {
+    public void updateQuestion(PutQuestionDTO putQuestionDTO,String principal) {
         log.info("payload: "+putQuestionDTO);
+        questionRepository.findQuestionByIdAndPrincipal(putQuestionDTO.id(), principal)
+                .orElseThrow(() -> new RuntimeException("Question not found with id: " + putQuestionDTO.id() + " for user: " + principal));
         questionRepository.updateQuestion(putQuestionDTO.title(), putQuestionDTO.question(), putQuestionDTO.id());
 
     }

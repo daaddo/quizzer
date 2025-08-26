@@ -26,14 +26,14 @@ public class QuestionController {
     }
 
     @PostMapping
-    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto) {
-        return ResponseEntity.ok(questionService.createQuestion(createQuestionDto));
+    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto,Principal principal) {
+
+        return ResponseEntity.ok(questionService.createQuestion(createQuestionDto,principal.getName()));
     }
 
     @GetMapping
-    public ResponseEntity<List<GetQuestionDto>> getAllQuestions() {
-        // Placeholder for future implementation
-        return ResponseEntity.ok(questionService.getAllQuestions());
+    public ResponseEntity<List<GetQuestionDto>> getAllQuestions(Principal principal) {
+        return ResponseEntity.ok(questionService.getAllQuestions(principal.getName()));
     }
 
     @GetMapping("/random")
@@ -44,14 +44,14 @@ public class QuestionController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Integer id) {
-        questionService.deleteQuestion(id);
+    public ResponseEntity<Void> deleteQuestion(@PathVariable Integer id, Principal principal) {
+        questionService.deleteQuestion(id,principal.getName());
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping
-    public ResponseEntity<String> updateQuestion(@RequestBody PutQuestionDTO putQuestionDTO) {
-        questionService.updateQuestion(putQuestionDTO);
+    public ResponseEntity<String> updateQuestion(@RequestBody PutQuestionDTO putQuestionDTO, Principal principal) {
+        questionService.updateQuestion(putQuestionDTO, principal.getName());
         return ResponseEntity.ok("Question updated successfully");
     }
 
