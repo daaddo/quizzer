@@ -39,7 +39,6 @@ public class JwtService {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.secretKey = initializeKey();
-        log.info("  LA CHIAVE è " + Encoders.BASE64URL.encode(secretKey.getEncoded()));
     }
 
 
@@ -56,6 +55,7 @@ public class JwtService {
     public String generateToken(CustomUserDetails user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", user.getEmail());
+        claims.put("id", user.getId());
         return Jwts.builder()
                 .claims()
                 .add(claims)

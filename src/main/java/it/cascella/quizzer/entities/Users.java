@@ -52,6 +52,10 @@ public class Users implements CustomUserDetails {
     }
 
     @Override
+    public Integer getId() {
+        return id;
+    }
+    @Override
     public boolean isCredentialsNonExpired() {
         return CustomUserDetails.super.isCredentialsNonExpired();
     }
