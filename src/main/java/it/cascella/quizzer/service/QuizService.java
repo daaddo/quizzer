@@ -3,7 +3,9 @@ package it.cascella.quizzer.service;
 
 import it.cascella.quizzer.dtos.NewQuizDTO;
 import it.cascella.quizzer.dtos.PutQuizDTO;
+import it.cascella.quizzer.entities.Quiz;
 import it.cascella.quizzer.entities.QuizRepository;
+import it.cascella.quizzer.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
@@ -11,9 +13,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class QuizService {
     private final QuizRepository quizRepository;
+    private final UserRepository userRepository;
 
-    public QuizService(QuizRepository quizRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository) {
         this.quizRepository = quizRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -24,12 +28,20 @@ public class QuizService {
             throw new RuntimeException("Quiz not found with id: " + id + " for user: " + userId);
         }
     }
-
+    @Transactional
+    @Modifying
     public Integer insertQuiz(NewQuizDTO newQuiz, Integer id) {
-        return quizRepository.insertQuiz(newQuiz.title(), newQuiz.description(), id);
+        Quiz quiz = new Quiz();
+        quiz.setDescription( newQuiz.description());
+        quiz.setTitle(newQuiz.title());
+
+        quiz.setUserId(userRepository.getUsersById(id));
+        quizRepository.save(quiz);
+        return quiz.getId();
     }
 
-
+    @Transactional
+    @Modifying
     public void updateQuiz(PutQuizDTO newQuiz, Integer id) {
 
         Integer i = quizRepository.updateQuiz(newQuiz.title(), newQuiz.description(), newQuiz.id(), id);

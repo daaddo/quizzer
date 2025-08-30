@@ -34,4 +34,6 @@ public interface UserRepository extends CrudRepository<Users, Long> {
             nativeQuery = true
     )
     List<QuizInformationDTO> getQuizInformationsByUserId(Integer id);
+
+    Users getUsersById(Integer id);
 }

@@ -6,7 +6,9 @@ import it.cascella.quizzer.dtos.PutQuizDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.service.QuizService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,9 +32,9 @@ public class QuizController {
     }
 
     @PostMapping
-    public void insertNewQuiz(@RequestBody NewQuizDTO newQuiz, @AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<Integer> insertNewQuiz(@RequestBody NewQuizDTO newQuiz, @AuthenticationPrincipal CustomUserDetails principal) {
         log.info("inserting quiz for user {}",  principal.getUsername());
-        quizService.insertQuiz(newQuiz,principal.getId());
+        return ResponseEntity.ok().body(quizService.insertQuiz(newQuiz,principal.getId()));
     }
 
     @PutMapping

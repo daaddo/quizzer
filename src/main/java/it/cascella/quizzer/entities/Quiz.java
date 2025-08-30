@@ -24,8 +24,8 @@ public class Quiz {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "questions_count", nullable = false)
-    private String questionCount;
+    @Column(name = "questions_count", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer questionCount = 0;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

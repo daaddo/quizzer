@@ -3,9 +3,10 @@ package it.cascella.quizzer.entities;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.Repository;
 
-public interface QuizRepository extends Repository<Quiz, Integer> {
+public interface QuizRepository extends CrudRepository<Quiz, Integer> {
     Quiz findQuizById(Integer id);
 
     @Modifying
