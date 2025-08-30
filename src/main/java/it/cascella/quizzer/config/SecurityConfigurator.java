@@ -35,11 +35,6 @@ public class SecurityConfigurator {
     @Value("${allowed.origins}" )
     private String allowedOrigins;
 
-    @Value("${remember.me.key}")
-    private String rememberMeKey;
-
-    @Value("${remember.me.secure}")
-    private boolean secure;
 
     private AuthenticationProvider authenticationProvider;
 
@@ -70,13 +65,6 @@ public class SecurityConfigurator {
                         .maxSessionsPreventsLogin(false) // l'effetto sarà che se due utenti sono già loggati al terzo non verrà permesso l'accesso
                         .expiredUrl("/expired")
                 //pagina a cui verrà reindirizzato l'utente se la sessione è scaduta
-        );
-        http.rememberMe(rememberMe -> rememberMe
-                .key(rememberMeKey)
-                .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 days
-                .rememberMeParameter("remember-me")
-                .useSecureCookie(secure)
-
         );
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

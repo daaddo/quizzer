@@ -117,7 +117,6 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         Claims payload = Jwts.parser()
                 .verifyWith(secretKey)
-                .requireExpiration(Date.from(Instant.now()))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

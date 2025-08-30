@@ -53,11 +53,13 @@ public class JwtFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
+            log.info("User found: "+user.getUsername()+" with id "+user.getId());
             UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
             SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-        }else {
-            filterChain.doFilter(request, response);
+
         }
+            filterChain.doFilter(request, response);
+
 
 
     }

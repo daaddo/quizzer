@@ -38,9 +38,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Username not found: " + username));
     }
 
-    public UserInformationDTO getUserInformation(String name) {
-        Users user = loadUserByUsernameOrEmail(name);
-
+    public UserInformationDTO getUserInformation(CustomUserDetails user) {
         List<QuizInformationDTO> quizzes = userRepository.getQuizInformationsByUserId(user.getId());
         return new UserInformationDTO(user.getId(), user.getUsername(), quizzes);
     }

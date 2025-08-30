@@ -49,3 +49,5 @@ set quiz_id = (select id from quiz limit1), user_id = (select id from users limi
 ALTER TABLE question
 MODIFY COLUMN quiz_id INT NOT NULL,
 MODIFY COLUMN user_id INT NOT NULL;
+
+
