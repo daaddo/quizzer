@@ -10,9 +10,11 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import it.cascella.quizzer.config.CustomAuthenticationProvider;
 import it.cascella.quizzer.entities.CustomUserDetails;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,14 +36,14 @@ import java.util.function.Function;
 public class JwtService {
     private final CustomAuthenticationProvider authProvider;
     private final UserService userService;
-    @Value("${jwt.secretKey}")
-    private String configuredSecret;
+    private final String configuredSecret;
     private final SecretKey secretKey;
 
     @Autowired
-    public JwtService(CustomAuthenticationProvider authProvider, UserService userService) {
+    public JwtService(CustomAuthenticationProvider authProvider, UserService userService,@Value("${jwt.secret.key:TESTkey}") String configuredSecret) {
         this.authProvider = authProvider;
         this.userService = userService;
+        this.configuredSecret = configuredSecret;
         this.secretKey = initializeKey();
     }
 
@@ -73,7 +75,6 @@ public class JwtService {
     }
 
     private SecretKey initializeKey() {
-        log.info("La chiave : {}", configuredSecret);
         if (configuredSecret != null && !configuredSecret.isEmpty()) {
             log.info("Using configured JWT secret key");
             log.info("Configured JWT secret (Base64): " + configuredSecret);
