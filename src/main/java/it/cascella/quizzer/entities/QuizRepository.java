@@ -36,4 +36,30 @@ public interface QuizRepository extends Repository<Quiz, Integer> {
     @Modifying
     @Transactional
     Integer deleteQuizByIdAndUserId_Id(Integer id, Integer userIdId);
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            insert into quiz (title, description, user_id)
+            values (:title, :description, :id)
+            """,
+            nativeQuery = true
+    )
+
+    Integer insertQuiz(String title, String description, Integer id);
+
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            update quiz
+            set title = :title,
+                description = :description
+            where id = :id1 and user_id = :id
+            """,
+            nativeQuery = true
+    )
+    Integer updateQuiz(String title, String description, Integer id, Integer id1);
 }

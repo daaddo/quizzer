@@ -34,7 +34,7 @@ import java.util.function.Function;
 public class JwtService {
     private final CustomAuthenticationProvider authProvider;
     private final UserService userService;
-    @Value("jwt.secret")
+    @Value("${jwt.secretKey}")
     private String configuredSecret;
     private final SecretKey secretKey;
 
@@ -73,8 +73,10 @@ public class JwtService {
     }
 
     private SecretKey initializeKey() {
+        log.info("La chiave : {}", configuredSecret);
         if (configuredSecret != null && !configuredSecret.isEmpty()) {
             log.info("Using configured JWT secret key");
+            log.info("Configured JWT secret (Base64): " + configuredSecret);
             // Se la chiave è in formato Base64, decodificala prima
             try {
                 byte[] keyBytes = Decoders.BASE64URL.decode(configuredSecret);
@@ -89,7 +91,7 @@ public class JwtService {
             try {
                 KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
                 keyGenerator.init(256);
-                log.info("Generated new JWT secret key");
+                log.info("Generated new JWT secret key " + Encoders.BASE64URL.encode(keyGenerator.generateKey().getEncoded()));
                 return keyGenerator.generateKey();
             } catch (NoSuchAlgorithmException e) {
                 log.error("Error creating key generator", e);
@@ -113,12 +115,16 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
+        Claims payload = Jwts.parser()
                 .verifyWith(secretKey)
-                .requireNotBefore(Date.from(Instant.now()))
+                .requireExpiration(Date.from(Instant.now()))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+        if(payload.getExpiration().before(new Date())) {
+            throw new ExpiredJwtException(null, payload, "Token expired");
+        }
+        return payload;
     }
 
 

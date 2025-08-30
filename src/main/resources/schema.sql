@@ -12,3 +12,5 @@ create table answer (
     is_correct boolean not null default false,
     foreign key (question_id) references question(id) on delete cascade
 );
+
+select * from question;
