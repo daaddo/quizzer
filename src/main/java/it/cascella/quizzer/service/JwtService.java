@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
+import it.cascella.quizzer.config.CustomAuthenticationProvider;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,22 +29,22 @@ import java.util.function.Function;
 @Slf4j
 @Service
 public class JwtService {
-    private final AuthenticationManager authenticationManager;
+    private final CustomAuthenticationProvider authProvider;
     private final UserService userService;
     @Value("jwt.secret")
     private String configuredSecret;
     private final SecretKey secretKey;
 
     @Autowired
-    public JwtService(@Lazy AuthenticationManager authenticationManager, UserService userService) {
-        this.authenticationManager = authenticationManager;
+    public JwtService(CustomAuthenticationProvider authProvider, UserService userService) {
+        this.authProvider = authProvider;
         this.userService = userService;
         this.secretKey = initializeKey();
     }
 
 
     public boolean isUserValid(String username, String password) {
-        Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        Authentication authenticate = authProvider.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         return authenticate.isAuthenticated();
 
     }

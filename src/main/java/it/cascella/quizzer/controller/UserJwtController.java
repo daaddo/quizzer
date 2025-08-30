@@ -28,9 +28,10 @@ public class UserJwtController {
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
         String username = loginRequest.username();
         String password = loginRequest.password();
-        log.info("Login request received: " + username + " " + password);
+        log.info("Login request received: " + username );
         if (!jwtService.isUserValid(username,password)){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            log.info("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
         CustomUserDetails timerUserDetails = userService.loadUserByUsername(username);
         String token= jwtService.generateToken(timerUserDetails);

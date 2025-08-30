@@ -56,8 +56,8 @@ public class QuestionService {
         return question.getId();
     }
 
-    public List<GetQuestionDto> getAllQuestions(String principal) {
-        List<Question> questions = questionRepository.findAllFromPrincipal(principal);
+    public List<GetQuestionDto> getAllQuestions(Integer principal, Integer quizId) {
+        List<Question> questions = questionRepository.findAllFromPrincipal(principal,quizId);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
@@ -69,8 +69,8 @@ public class QuestionService {
                 .toList();
     }
 
-    public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,String username) {
-        List<Question> questions = questionRepository.findRandomQuestions(size, username);
+        public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,Integer userId) {
+        List<Question> questions = questionRepository.findRandomQuestions(size, userId);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
@@ -82,7 +82,7 @@ public class QuestionService {
                 .toList();
     }
 
-    public void deleteQuestion(Integer id, String principal) {
+    public void deleteQuestion(Integer id, Integer principal) {
         questionRepository.findByIdAndUsername(id, principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + id));
         questionRepository.deleteQuestionById(id);
@@ -93,7 +93,7 @@ public class QuestionService {
 
     @Modifying
     @Transactional
-    public void updateQuestion(PutQuestionDTO putQuestionDTO,String principal) {
+    public void updateQuestion(PutQuestionDTO putQuestionDTO,Integer principal) {
         log.info("payload: "+putQuestionDTO);
         questionRepository.findQuestionByIdAndPrincipal(putQuestionDTO.id(), principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + putQuestionDTO.id() + " for user: " + principal));

@@ -20,15 +20,14 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
         value = """
         SELECT question.*
         FROM question
-        JOIN (SELECT * FROM users WHERE email LIKE :username OR username LIKE :username) user
-        ON question.user_id = user.id
+        WHERE user_id = :userId
         ORDER BY RAND()
         LIMIT :size
 """
 ,
         nativeQuery = true
   )
-  List<Question> findRandomQuestions(Integer size, String username);
+  List<Question> findRandomQuestions(Integer size, Integer userId);
 
   @Modifying
   @Transactional
@@ -57,35 +56,32 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
             value = """
             SELECT q.*
             FROM question q
-            JOIN users u ON q.user_id = u.id
-            WHERE q.id = :id AND (u.username = :username OR u.email = :username)
+            WHERE q.id = :id AND q.user_id = :userId
             """,
             nativeQuery = true
     )
-    Optional<Question> findByIdAndUsername(Integer id, String username);
+    Optional<Question> findByIdAndUsername(Integer id, Integer userId);
 
 
     @Query(
             value = """
             select q.* from question q
-            join users u on q.user_id = u.id
-            where q.id = :id and (u.username = :principal or u.email = :principal)
+            where q.id = :id and q.user_id = :pricipal
             """,
             nativeQuery = true
     )
-    Optional<Object> findQuestionByIdAndPrincipal(Integer id, String principal);
+    Optional<Object> findQuestionByIdAndPrincipal(Integer id, Integer principal);
 
 
     @Query(
             value = """
             SELECT q.*
-            FROM question q
-            JOIN users u ON q.user_id = u.id
-            WHERE u.username = :principal OR u.email = :principal
+            FROM (select q.* from question q where q.quiz_id = :quizId) q
+            WHERE q.user_id = :principal
             """,
             nativeQuery = true
     )
-    List<Question> findAllFromPrincipal(String principal);
+    List<Question> findAllFromPrincipal(Integer principal, Integer quizId);
 
 
     @Query(

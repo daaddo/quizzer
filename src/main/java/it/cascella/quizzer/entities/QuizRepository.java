@@ -13,7 +13,7 @@ public interface QuizRepository extends Repository<Quiz, Integer> {
     @Query(
             value = """
             update quiz q
-            set q.question_count = q.question_count + 1
+            set q.questions_count = q.questions_count + 1
             where q.id = :integer
             """,
             nativeQuery = true
@@ -26,10 +26,14 @@ public interface QuizRepository extends Repository<Quiz, Integer> {
             value = """
             update quiz q
                 
-            set q.question_count = q.question_count - 1
+            set q.questions_count = q.questions_count - 1
             where q.id = :id
             """,
             nativeQuery = true
     )
     void decrementQuestionCount(Integer id);
+
+    @Modifying
+    @Transactional
+    Integer deleteQuizByIdAndUserId_Id(Integer id, Integer userIdId);
 }
