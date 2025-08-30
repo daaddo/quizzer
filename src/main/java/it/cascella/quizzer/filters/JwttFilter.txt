@@ -1,0 +1,64 @@
+package it.cascella.quizzer.filters;
+
+import it.cascella.quizzer.service.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+@Component
+public class JwttFilter extends OncePerRequestFilter {
+
+    private JwtService jwtService;
+
+    @Autowired
+    public JwttFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
+
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        //importantissimo il secondo argomento dell'if:
+        //stiamo controllando che non ci siano già autenticazioni in corso o risolte per
+        //l'utente che stiamo autenticando perché in Spring ogni richiesta HTTP ha un solo thread di esecuzione e quindi un solo
+        //SecurityContextHolder.
+
+        //retrieve userdetail from user
+        AntifurtoUser userDetails = jwtService.getUserByUsername(username);
+
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            //bisogna
+            // 1) validare il token, ovvero controllare che non sia scaduto e che sia stato firmato con la chiave corretta
+            //2) controllare che l'utente esista nel db
+            //3) controllare che l'utente non sia già autenticato
+            //4) controllare che l'utente sia abilitato
+            if (jwtService.isTokenValid(token, username)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,  //principal
+                        null,
+                        new ArrayList<>()
+                );
+                //qui è già autenticato perché nel costruttore di UsernamePasswordAuthenticationToken
+                //passiamo il principal e non le credenziali e nel costruttore
+                //c'è già il setAuthentication(true)
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}

@@ -1,10 +1,13 @@
 package it.cascella.quizzer.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import it.cascella.quizzer.config.CustomAuthenticationProvider;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import lombok.extern.slf4j.Slf4j;
@@ -112,20 +115,12 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
+                .requireNotBefore(Date.from(Instant.now()))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
-    public boolean isTokenValid(String token, String username) {
-        UserDetails antifurtoUser = userService.loadUserByUsername(username);
-        if (antifurtoUser == null) {
-            log.warn("Utente non trovato: {}", username);
-            return false;
-        }
-        return (extractUsername(token).equals(username) && !isTokenExpired(token));
-
-    }
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
