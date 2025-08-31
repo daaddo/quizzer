@@ -31,12 +31,12 @@ public class QuestionService {
         this.quizRepository = quizRepository;
     }
 
-    public Integer createQuestion(CreateQuestionDto createQuestionDto,String principal) {
+    public Integer createQuestion(CreateQuestionDto createQuestionDto,Integer userId) {
 
         Question question = new Question();
 
-        Users users = questionRepository.verifyQuizExistsInUser(createQuestionDto.quizId(), principal)
-                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " + principal));
+        Users users = questionRepository.verifyQuizExistsInUser(createQuestionDto.quizId(), userId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " +  userId));
 
 
         question.setTitle(createQuestionDto.title());
@@ -69,8 +69,8 @@ public class QuestionService {
                 .toList();
     }
 
-        public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,Integer userId) {
-        List<Question> questions = questionRepository.findRandomQuestions(size, userId);
+        public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,Integer quizId,Integer userId) {
+        List<Question> questions = questionRepository.findRandomQuestions(size,quizId, userId);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
@@ -93,11 +93,14 @@ public class QuestionService {
 
     @Modifying
     @Transactional
-    public void updateQuestion(PutQuestionDTO putQuestionDTO,Integer principal) {
+    public void updateQuestion(PutQuestionDTO putQuestionDTO, Integer principal) {
         log.info("payload: "+putQuestionDTO);
         questionRepository.findQuestionByIdAndPrincipal(putQuestionDTO.id(), principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + putQuestionDTO.id() + " for user: " + principal));
-        questionRepository.updateQuestion(putQuestionDTO.title(), putQuestionDTO.question(), putQuestionDTO.id());
+        Integer i = questionRepository.updateQuestion(putQuestionDTO.title(), putQuestionDTO.question(), putQuestionDTO.id());
+        if (i != 1) {
+            throw new RuntimeException("Failed to update question with id: " + putQuestionDTO.id());
+        }
 
     }
 }

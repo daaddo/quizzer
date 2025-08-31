@@ -13,4 +13,3 @@ create table answer (
     foreign key (question_id) references question(id) on delete cascade
 );
 
-select * from question;

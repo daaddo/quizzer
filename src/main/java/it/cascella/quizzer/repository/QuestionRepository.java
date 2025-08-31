@@ -1,6 +1,5 @@
 package it.cascella.quizzer.repository;
 
-import it.cascella.quizzer.dtos.PutQuestionDTO;
 import it.cascella.quizzer.entities.Question;
 import it.cascella.quizzer.entities.Users;
 import jakarta.transaction.Transactional;
@@ -20,14 +19,14 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
         value = """
         SELECT question.*
         FROM question
-        WHERE user_id = :userId
+        WHERE user_id = :userId and quiz_id = :quizId
         ORDER BY RAND()
         LIMIT :size
 """
 ,
         nativeQuery = true
   )
-  List<Question> findRandomQuestions(Integer size, Integer userId);
+  List<Question> findRandomQuestions(Integer size,Integer quizId, Integer userId);
 
   @Modifying
   @Transactional
@@ -66,7 +65,7 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     @Query(
             value = """
             select q.* from question q
-            where q.id = :id and q.user_id = :pricipal
+            where q.id = :id and q.user_id = :principal
             """,
             nativeQuery = true
     )
@@ -87,16 +86,17 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     @Query(
             value = """
             SELECT u.*
-            FROM question q
+            FROM quiz q
             JOIN users u ON q.user_id = u.id
-            WHERE q.quiz_id = :integer AND (u.username = :principal OR u.email = :principal)
+            WHERE q.id = :integer AND u.id = :principal
             """,
             nativeQuery = true
     )
-    Optional<Users> verifyQuizExistsInUser(Integer integer, String principal);
+    Optional<Users> verifyQuizExistsInUser(Integer integer, Integer principal);
 
     @Modifying
     @Transactional
+    @Deprecated
     @Query(
 
             value = """

@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 
 
@@ -28,9 +27,9 @@ public class QuestionController {
     }
 
     @PostMapping
-    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto,Principal principal) {
+    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto,@AuthenticationPrincipal CustomUserDetails principal) {
 
-        return ResponseEntity.ok(questionService.createQuestion(createQuestionDto,principal.getName()));
+        return ResponseEntity.ok(questionService.createQuestion(createQuestionDto,principal.getId()));
     }
 
     @GetMapping("/{quizId}")
@@ -39,10 +38,10 @@ public class QuestionController {
     }
 
     @GetMapping("/random")
-    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size, @AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size, @RequestParam Integer quizId, @AuthenticationPrincipal CustomUserDetails principal) {
         log.info("Fetching a random set of {} questions", size);
         log.info("Fetching for {}", principal);
-        return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size,principal.getId()));
+        return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size,quizId,principal.getId()));
     }
 
     @DeleteMapping("/{id}")
@@ -53,8 +52,9 @@ public class QuestionController {
 
     @PutMapping
     public ResponseEntity<String> updateQuestion(@RequestBody PutQuestionDTO putQuestionDTO, @AuthenticationPrincipal CustomUserDetails principal) {
+        log.info("Updating question with id {} for user {} with id {}", putQuestionDTO.id(), principal.getUsername(), principal.getId());
         questionService.updateQuestion(putQuestionDTO, principal.getId());
-        return ResponseEntity.ok("Question updated successfully");
+        return ResponseEntity.ok("Question updated successfully ");
     }
 
 }

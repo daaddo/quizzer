@@ -29,7 +29,7 @@ public interface UserRepository extends CrudRepository<Users, Long> {
             value = """
                     SELECT q.id AS id, q.title AS title, q.description AS description, q.questions_count AS questionCount
                     FROM quiz q
-                    WHERE q.id = :id
+                    WHERE q.user_id = :id
                     """,
             nativeQuery = true
     )
