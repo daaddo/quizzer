@@ -1,5 +1,6 @@
 package it.cascella.quizzer.service;
 
+import it.cascella.quizzer.dtos.NewUserDTO;
 import it.cascella.quizzer.dtos.QuizInformationDTO;
 import it.cascella.quizzer.dtos.UserInformationDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
@@ -42,4 +43,6 @@ public class UserService implements UserDetailsService {
         List<QuizInformationDTO> quizzes = userRepository.getQuizInformationsByUserId(user.getId());
         return new UserInformationDTO(user.getId(), user.getUsername(), quizzes);
     }
+
+
 }

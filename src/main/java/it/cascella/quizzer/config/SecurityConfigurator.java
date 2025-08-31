@@ -51,7 +51,9 @@ public class SecurityConfigurator {
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
+                .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
         );
         http.authenticationProvider(authenticationProvider);

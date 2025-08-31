@@ -29,7 +29,7 @@ DROP TABLE IF EXISTS `answer`;
 CREATE TABLE `answer` (
                           `id` int NOT NULL AUTO_INCREMENT,
                           `question_id` int NOT NULL,
-                          `answer` varchar(255) NOT NULL,
+                          `answer` varchar(600) NOT NULL,
                           `is_correct` tinyint(1) NOT NULL DEFAULT '0',
                           PRIMARY KEY (`id`),
                           KEY `question_id` (`question_id`),
@@ -78,8 +78,8 @@ DROP TABLE IF EXISTS `question`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `question` (
                             `id` int NOT NULL AUTO_INCREMENT,
-                            `title` varchar(255) NOT NULL,
-                            `question` varchar(255) NOT NULL,
+                            `title` varchar(600) NOT NULL,
+                            `question` varchar(1200) NOT NULL,
                             PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=182 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
