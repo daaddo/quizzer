@@ -2,6 +2,7 @@ package it.cascella.quizzer.controller;
 
 import io.jsonwebtoken.Jwt;
 import it.cascella.quizzer.dtos.GetQuestionDto;
+import it.cascella.quizzer.dtos.GetQuestionDtoNotCorrected;
 import it.cascella.quizzer.dtos.NewQuizDTO;
 import it.cascella.quizzer.dtos.PutQuizDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
@@ -63,7 +64,7 @@ public class QuizController {
     public
 
     @GetMapping("/random")
-    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<List<GetQuestionDtoNotCorrected>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) {
         log.info("Fetching a random set of questions from token: {}", token);
         log.info("Fetching for {}", principal);
         return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));

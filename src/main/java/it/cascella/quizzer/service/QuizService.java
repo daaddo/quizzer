@@ -86,15 +86,14 @@ public class QuizService {
         return String.format(token);
     }
 
-    public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) {
+    public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
         QuizInformations quizInformations = cache.getIfPresent(token);
         Integer quizId = quizInformations.getQuizId();
-        Integer numberOfQuestions = quizInformations.getNumberOfQuestions();
 
-
-        //todo check if the user has already taken the quiz
-        //todo check deella domanda se è a risposta multipla o singola
-        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizId, userId);
+        if (quizInformations.getUsersTakingTheQuiz().stream().anyMatch(user -> user.getDetails().getId() == principal.getId())) {
+            throw new QuizzerException("User has already taken the quiz", HttpStatus.FORBIDDEN.value());
+        }
+        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizId,quizInformations.getOwner().getId());
         return questions.stream()
                 .map(question -> new GetQuestionDtoNotCorrected(
                         question.getId(),
