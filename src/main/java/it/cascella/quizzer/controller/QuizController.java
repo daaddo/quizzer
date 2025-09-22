@@ -1,9 +1,11 @@
 package it.cascella.quizzer.controller;
 
 import io.jsonwebtoken.Jwt;
+import it.cascella.quizzer.dtos.GetQuestionDto;
 import it.cascella.quizzer.dtos.NewQuizDTO;
 import it.cascella.quizzer.dtos.PutQuizDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
+import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.QuizService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.Response;
@@ -13,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -49,9 +52,20 @@ public class QuizController {
             Integer durationInMinutes
     ) {}
     @GetMapping
-    public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
-        String link= quizService.generateLink(params.quizId, params.durationInMinutes,params.numberOfQuestions(), principal);
-        return ResponseEntity.ok(link);
+        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.durationInMinutes,params.numberOfQuestions(), principal);
+        return ResponseEntity.ok(token);
+    }
+
+
+    @GetMapping
+    public
+
+    @GetMapping("/random")
+    public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) {
+        log.info("Fetching a random set of questions from token: {}", token);
+        log.info("Fetching for {}", principal);
+        return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));
     }
 }

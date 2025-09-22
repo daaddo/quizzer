@@ -1,3 +1,12 @@
+alter table question
+add column is_multiple_choice boolean not null default false;
+
+
+
+update question q
+set is_multiple_choice = true
+where q.id in (select question_id from answer where answer.is_correct = true group by question_id having count(*) > 1);
+
 
 create table if not exists users (
     id int auto_increment primary key,
@@ -47,7 +56,7 @@ ALTER TABLE question
         FOREIGN KEY (quiz_id) REFERENCES quiz(id) ON DELETE CASCADE;
 
 update question
-set quiz_id = (select id from quiz limit1), user_id = (select id from users limit1);
+set quiz_id = (select id from quiz limit1), user_id = (select id from users limit 1);
 
 
 ALTER TABLE question

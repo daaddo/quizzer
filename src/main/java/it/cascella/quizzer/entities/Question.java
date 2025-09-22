@@ -26,6 +26,8 @@ public class Question {
     @JoinColumn(name = "question_id")
     private List<Answer> answers;
 
+    @Column(nullable = false, name = "is_multiple_choice")
+    private Boolean multipleChoice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

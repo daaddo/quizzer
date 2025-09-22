@@ -43,6 +43,17 @@ public class QuestionService {
         question.setQuestion(createQuestionDto.question());
         question.setUser(users);
         question.setQuiz(quizRepository.findQuizById(createQuestionDto.quizId()));
+        int correctAnswers = 0;
+        for (Answer answer : question.getAnswers()) {
+            if(answer.getCorrect()) {
+                correctAnswers++;
+            }
+        }
+        if (correctAnswers >=2) {
+            question.setMultipleChoice(true);
+        } else {
+            question.setMultipleChoice(false);
+        }
         questionRepository.save(question);
 
         for (CreateAnswerDto answer : createQuestionDto.answers()) {

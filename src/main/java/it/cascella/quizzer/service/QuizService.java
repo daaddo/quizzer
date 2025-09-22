@@ -1,24 +1,41 @@
 package it.cascella.quizzer.service;
 
 
-import it.cascella.quizzer.dtos.NewQuizDTO;
-import it.cascella.quizzer.dtos.PutQuizDTO;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
+import it.cascella.quizzer.entities.Question;
 import it.cascella.quizzer.entities.Quiz;
 import it.cascella.quizzer.entities.QuizRepository;
+import it.cascella.quizzer.exceptions.QuizzerException;
+import it.cascella.quizzer.repository.QuestionRepository;
 import it.cascella.quizzer.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class QuizService {
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
+    private final Cache<String, QuizInformations> cache;
+    private final TokenGenerator tokenGenerator;
+    private final QuestionRepository questionRepository;
 
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
+        this.tokenGenerator = tokenGenerator;
+        this.questionRepository = questionRepository;
+        this.cache = Caffeine.newBuilder()
+                .expireAfterWrite(12, TimeUnit.HOURS) // TTL 15 minuti
+                .build();
     }
 
     @Transactional
@@ -52,7 +69,42 @@ public class QuizService {
         }
     }
 
-    public String generateLink(Integer quizId, Integer durationInMinutes, Integer id, CustomUserDetails details) {
-        return null;
+    public String generateLink(Integer quizId,Integer numbOfQuestions, Integer durationInMinutes, Integer id, CustomUserDetails details) throws QuizzerException {
+        // Check if the quiz exists and belongs to the user
+        Quiz quiz = quizRepository.findByIdAndUserId_Id(quizId, details.getId())
+                .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
+        String token = tokenGenerator.generateToken(32);
+        cache.put(token, new QuizInformations(details,
+                quizId,
+                quiz.getTitle(),
+                quiz.getDescription(),
+                numbOfQuestions,
+                durationInMinutes,
+                new LinkedList<QuizUserInformation>()
+                )
+        );
+        return String.format(token);
+    }
+
+    public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) {
+        QuizInformations quizInformations = cache.getIfPresent(token);
+        Integer quizId = quizInformations.getQuizId();
+        Integer numberOfQuestions = quizInformations.getNumberOfQuestions();
+
+
+        //todo check if the user has already taken the quiz
+        //todo check deella domanda se è a risposta multipla o singola
+        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizId, userId);
+        return questions.stream()
+                .map(question -> new GetQuestionDtoNotCorrected(
+                        question.getId(),
+                        question.getTitle(),
+                        question.getQuestion(),
+                        question.getAnswers().stream()
+                                .map(answer -> new GetAnswerDtoNotCorrected(answer.getId(), answer.getAnswer() ))
+                                .toList(),
+                        question.getMultipleChoice()  )
+                )
+                .toList();
     }
 }

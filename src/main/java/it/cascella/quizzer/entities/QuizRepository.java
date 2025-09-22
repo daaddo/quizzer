@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.Repository;
 
+import java.util.Optional;
+
 public interface QuizRepository extends CrudRepository<Quiz, Integer> {
     Quiz findQuizById(Integer id);
 
@@ -63,4 +65,6 @@ public interface QuizRepository extends CrudRepository<Quiz, Integer> {
             nativeQuery = true
     )
     Integer updateQuiz(String title, String description, Integer id, Integer id1);
+
+    Optional<Quiz> findByIdAndUserId_Id(Integer quizId, Integer id);
 }
