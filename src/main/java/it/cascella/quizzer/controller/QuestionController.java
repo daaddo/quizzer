@@ -32,17 +32,32 @@ public class QuestionController {
         return ResponseEntity.ok(questionService.createQuestion(createQuestionDto,principal.getId()));
     }
 
+    /***
+     * Get all questions for a specific quiz for the authenticated user
+     * @param principal (the authenticated user)
+     * @param quizId the id of the quiz to get questions for
+     * @return a list of questions
+     */
     @GetMapping("/{quizId}")
     public ResponseEntity<List<GetQuestionDto>> getAllQuestions(@AuthenticationPrincipal CustomUserDetails principal  , @PathVariable Integer quizId) {
+
         return ResponseEntity.ok(questionService.getAllQuestions(principal.getId(),quizId));
     }
 
+    /***
+     * Get a random set of questions for a specific quiz for the authenticated user
+     * @param size the number of questions to retrieve
+     * @param quizId the id of the quiz to get questions for
+     * @param principal (the authenticated user)
+     * @return a list of questions
+     */
     @GetMapping("/random")
     public ResponseEntity<List<GetQuestionDto>> getRandomSetOfQuestions(@RequestParam Integer size, @RequestParam Integer quizId, @AuthenticationPrincipal CustomUserDetails principal) {
         log.info("Fetching a random set of {} questions", size);
         log.info("Fetching for {}", principal);
         return ResponseEntity.ok(questionService.getRandomSetOfQuestions(size,quizId,principal.getId()));
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Integer id, @AuthenticationPrincipal CustomUserDetails principal) {

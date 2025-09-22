@@ -3,6 +3,7 @@ package it.cascella.quizzer.service;
 
 import it.cascella.quizzer.dtos.NewQuizDTO;
 import it.cascella.quizzer.dtos.PutQuizDTO;
+import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.entities.Quiz;
 import it.cascella.quizzer.entities.QuizRepository;
 import it.cascella.quizzer.repository.UserRepository;
@@ -49,5 +50,9 @@ public class QuizService {
         if (i != 1) {
             throw new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id);
         }
+    }
+
+    public String generateLink(Integer quizId, Integer durationInMinutes, Integer id, CustomUserDetails details) {
+        return null;
     }
 }

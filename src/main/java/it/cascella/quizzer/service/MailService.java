@@ -8,9 +8,11 @@ import it.cascella.quizzer.entities.Role;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.UserRepository;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,6 +51,9 @@ public class MailService {
     }
 
     public void registerUser(NewUserDTO newUserDTO) {
+        if (userRepository.existsUsersByUsernameOrEmail(newUserDTO.username(), newUserDTO.email())) {
+            throw new IllegalArgumentException("Username or email already in use");
+        }
         String token = tokenGenerator.generateToken(32);
 
         String message = "Click on the following link to verify your email: " + URL + "/api/v1/auth/verify?token=" + token;
@@ -88,6 +93,8 @@ public class MailService {
         return stats;
     }
 
+    @Transactional
+    @Modifying
     public boolean confirmUser(String token) {
         NewUserDTO newUserDTO = cache.getIfPresent(token);
         if (newUserDTO != null) {

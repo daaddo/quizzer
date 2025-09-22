@@ -2,6 +2,8 @@ package it.cascella.quizzer.repository;
 
 import it.cascella.quizzer.dtos.QuizInformationDTO;
 import it.cascella.quizzer.entities.Users;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -36,4 +38,6 @@ public interface UserRepository extends CrudRepository<Users, Long> {
     List<QuizInformationDTO> getQuizInformationsByUserId(Integer id);
 
     Users getUsersById(Integer id);
+
+    boolean existsUsersByUsernameOrEmail(@NotBlank String username, @NotBlank String email);
 }

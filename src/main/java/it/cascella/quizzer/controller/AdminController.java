@@ -30,7 +30,4 @@ public class AdminController {
 
     //todo endpoint per gestione utenti (list, delete, update roles, ecc)
 
-    //
-
-
 }

@@ -52,7 +52,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
-    @GetMapping("/confirm")
+    @PostMapping("/confirm")
     public ResponseEntity<String> confirmUser(@RequestParam("token") String token) {
         log.info("Confirming user with token: {}", token);
         boolean isConfirmed = mailService.confirmUser(token);

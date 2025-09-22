@@ -42,4 +42,16 @@ public class QuizController {
         log.info("updating quiz for user {}",  principal.getUsername());
         quizService.updateQuiz(newQuiz,principal.getId());
     }
+
+    record  LinkRequest(
+            Integer quizId,
+            Integer numberOfQuestions,
+            Integer durationInMinutes
+    ) {}
+    @GetMapping
+    public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) {
+        log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
+        String link= quizService.generateLink(params.quizId, params.durationInMinutes,params.numberOfQuestions(), principal);
+        return ResponseEntity.ok(link);
+    }
 }

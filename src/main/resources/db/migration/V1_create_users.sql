@@ -16,7 +16,7 @@ create table if not exists quiz (
     questions_count int not null default 0,
     foreign key (user_id) references users(id) on delete cascade
 );
-
+/* TODO aggiungere feedback in backend */
 create table feedbacks (
     id int auto_increment primary key,
     user_id int ,
@@ -30,6 +30,10 @@ create table feedbacks (
 );
 INSERT INTO users( username, password, email)
 value ('Claudia','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXPzxNP4C', 'david.cascella.5@gmail.com');
+
+INSERT INTO users( username, password, email, role)
+    value ('Admin','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXPzxNP4C', 'david.cascellaa.5@gmail.com', 'ADMIN');
+
 
 INSERT INTO quiz (title, description, user_id,questions_count)
 VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users LIMIT 1),(SELECT COUNT(*) FROM question));
