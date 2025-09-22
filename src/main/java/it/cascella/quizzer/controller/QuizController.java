@@ -60,11 +60,10 @@ public class QuizController {
     }
 
 
-    @GetMapping
-    public
+
 
     @GetMapping("/random")
-    public ResponseEntity<List<GetQuestionDtoNotCorrected>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<List<GetQuestionDtoNotCorrected>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("Fetching a random set of questions from token: {}", token);
         log.info("Fetching for {}", principal);
         return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));
