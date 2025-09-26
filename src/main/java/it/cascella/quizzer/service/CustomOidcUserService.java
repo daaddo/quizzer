@@ -31,9 +31,8 @@ public class CustomOidcUserService extends OidcUserService {
 
         Optional<Users> byEmail = userRepository.findUsersByEmail(email);
         // salva o aggiorna nel DB
-        System.out.println("LOGGING ISSUERRRR "+oidcUser.getIssuer());
         // log del TOKENID
-        System.out.println("LOGGING TOKENID "+oidcUser.getIdToken().getTokenValue());
+
         if (byEmail.isEmpty()){
             Users user = new Users();
             user.setEmail(email);
