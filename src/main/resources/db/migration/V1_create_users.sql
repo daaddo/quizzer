@@ -11,9 +11,10 @@ where q.id in (select question_id from answer where answer.is_correct = true gro
 create table if not exists users (
     id int auto_increment primary key,
     username varchar(50) not null unique,
-    password varchar(255) not null,
+    password varchar(255) ,
     email varchar(100) not null unique,
     enabled boolean not null default true,
+    profile_picture_url varchar(2048),
     role enum('USER', 'ADMIN') not null default 'USER'
 );
 

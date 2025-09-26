@@ -22,7 +22,7 @@ public class Users implements CustomUserDetails {
     @Column(name = "username", nullable = false, length = 50)
     private String username;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     @Column(name = "email", nullable = false, length = 100)
@@ -35,6 +35,9 @@ public class Users implements CustomUserDetails {
     @ColumnDefault("1")
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = false;
+
+    @Column(name = "profile_picture_url", length = 2048)
+    private  String profilePictureUrl;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -2,17 +2,21 @@ package it.cascella.quizzer.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.cascella.quizzer.config.CustomPasswordEncoder;
 import it.cascella.quizzer.dtos.NewUserDTO;
 import it.cascella.quizzer.entities.Role;
 import it.cascella.quizzer.entities.Users;
+import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.repository.UserRepository;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +34,8 @@ public class MailService {
     @Value("${spring.mail.username}")
     private String FROM ;
 
-    private final Cache<String, NewUserDTO> cache;
+    private final Cache<String, NewUserDTO> cacheRegister;
+    private final Cache<String, NewUserDTO> cacheReset;
     private final TokenGenerator tokenGenerator;
     private final UserRepository userRepository;
 
@@ -44,7 +49,10 @@ public class MailService {
         this.tokenGenerator = tokenGenerator;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.cache = Caffeine.newBuilder()
+        this.cacheReset = Caffeine.newBuilder()
+                .expireAfterWrite(15, TimeUnit.MINUTES) // TTL 15 minuti
+                .build();
+        this.cacheRegister = Caffeine.newBuilder()
                 .expireAfterWrite(15, TimeUnit.MINUTES) // TTL 15 minuti
                 .build();
 
@@ -64,7 +72,7 @@ public class MailService {
                 newUserDTO.email(),
                 passwordEncoder.encode(newUserDTO.password())
         );
-        cache.put(token, toSave);
+        cacheRegister.put(token, toSave);
     }
 
     public void sendEmail(String to, String subject, String text) {
@@ -84,21 +92,21 @@ public class MailService {
 
     public HashMap<String, Object> getCacheStats() {
         HashMap<String, Object> stats = new HashMap<>();
-        stats.put("estimatedSize", cache.estimatedSize());
-        stats.put("hitCount", cache.stats().hitCount());
-        stats.put("missCount", cache.stats().missCount());
-        stats.put("hitRate", cache.stats().hitRate());
-        stats.put("missRate", cache.stats().missRate());
-        stats.put("map", cache.asMap());
+        stats.put("estimatedSize", cacheRegister.estimatedSize());
+        stats.put("hitCount", cacheRegister.stats().hitCount());
+        stats.put("missCount", cacheRegister.stats().missCount());
+        stats.put("hitRate", cacheRegister.stats().hitRate());
+        stats.put("missRate", cacheRegister.stats().missRate());
+        stats.put("map", cacheRegister.asMap());
         return stats;
     }
 
     @Transactional
     @Modifying
     public boolean confirmUser(String token) {
-        NewUserDTO newUserDTO = cache.getIfPresent(token);
+        NewUserDTO newUserDTO = cacheRegister.getIfPresent(token);
         if (newUserDTO != null) {
-            cache.invalidate(token);
+            cacheRegister.invalidate(token);
             Users user = new Users();
             user.setUsername(newUserDTO.username());
             user.setEmail(newUserDTO.email());
@@ -113,5 +121,41 @@ public class MailService {
             log.warn("Invalid or expired token: {}", token);
             return false;
         }
+    }
+
+    public boolean initiatePasswordReset(String email) {
+        Users user = userRepository.findUsersByEmail(email).orElse(null);
+        if (user == null) {
+            log.warn("Password reset requested for non-existing email: {}", email);
+            return false; // Email non trovata
+        }
+
+        String token = tokenGenerator.generateToken(32);
+        String message = "Click on the following link to reset your password: " + URL + "/api/v1/users/reset-password?token=" + token;
+        sendEmail(email, "Password Reset", message);
+
+        // Salva il token di reset della password in cache con TTL di 15 minuti
+        cacheReset.put(token, new NewUserDTO(user.getUsername(), user.getEmail(), user.getPassword()));
+        return true;
+    }
+
+    public void resetPassword( String token, String s) throws QuizzerException {
+        NewUserDTO newUserDTO = cacheReset.getIfPresent(token);
+        if (newUserDTO != null) {
+            cacheReset.invalidate(token);
+            Users user = userRepository.findUsersByEmail(newUserDTO.email()).orElse(null);
+            if (user != null) {
+                user.setPassword(passwordEncoder.encode(s));
+                userRepository.save(user);
+                log.info("Password for user {} reset successfully", newUserDTO.username());
+
+            } else {
+                log.error("User not found for email: {}", newUserDTO.email());
+                throw new QuizzerException("User not found", HttpStatus.NOT_FOUND.value());
+            }
+        } else {
+            log.warn("Invalid or expired password reset token: {}", token);
+        }
+
     }
 }

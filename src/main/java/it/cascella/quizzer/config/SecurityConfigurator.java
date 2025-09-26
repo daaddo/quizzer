@@ -2,6 +2,7 @@ package it.cascella.quizzer.config;
 
 
 import it.cascella.quizzer.filters.JwtFilter;
+import it.cascella.quizzer.service.CustomOidcUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,12 +37,14 @@ public class SecurityConfigurator {
     private String allowedOrigins;
 
 
+    private final CustomOidcUserService customOidcUserService;
     private AuthenticationProvider authenticationProvider;
 
 
     @Autowired
-    public SecurityConfigurator(JwtFilter jwtFilter, AuthenticationProvider authenticationProvider) {
+    public SecurityConfigurator(JwtFilter jwtFilter, CustomOidcUserService customOidcUserService, AuthenticationProvider authenticationProvider) {
         this.jwtFilter = jwtFilter;
+        this.customOidcUserService = customOidcUserService;
         this.authenticationProvider = authenticationProvider;
     }
 
@@ -67,6 +70,12 @@ public class SecurityConfigurator {
                         .maxSessionsPreventsLogin(false) // l'effetto sarà che se due utenti sono già loggati al terzo non verrà permesso l'accesso
                         .expiredUrl("/expired")
                 //pagina a cui verrà reindirizzato l'utente se la sessione è scaduta
+        );
+        http.oauth2Login(oauth -> oauth
+                .userInfoEndpoint(userInfo -> userInfo
+                        .oidcUserService(customOidcUserService)
+                )
+                .defaultSuccessUrl("http://localhost:5173/home", true)
         );
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

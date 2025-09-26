@@ -1,27 +1,22 @@
 package it.cascella.quizzer.controller;
 
 
-import it.cascella.quizzer.config.CustomAuthenticationProvider;
 import it.cascella.quizzer.dtos.NewUserDTO;
 import it.cascella.quizzer.dtos.UserInformationDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
+import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.MailService;
 import it.cascella.quizzer.service.UserService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import javax.security.sasl.AuthenticationException;
-import java.security.Principal;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -61,5 +56,27 @@ public class UserController {
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
         }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestParam("email") String email) {
+        log.info("Password reset requested for email: {}", email);
+        mailService.initiatePasswordReset(email);
+        return ResponseEntity.ok().build();
+    }
+
+    private record ResetPasswordRequest(@NotNull String token, @NotNull @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{8,}$",
+            message = "La password deve contenere almeno 1 minuscola, 1 maiuscola e 1 numero"
+    )
+    @Size(min = 8, message = "La password deve essere di almeno 8 caratteri") String newPassword) {
+
+    }
+    @PostMapping("/set/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) throws QuizzerException {
+        log.info("Resetting password with token: {}", request.token());
+        mailService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok("Password reset successfully");
+
     }
 }

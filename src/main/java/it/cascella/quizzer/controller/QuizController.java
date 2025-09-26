@@ -52,7 +52,7 @@ public class QuizController {
             Integer numberOfQuestions,
             Integer durationInMinutes
     ) {}
-    @GetMapping
+    @PostMapping("/link")
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
         String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.durationInMinutes,params.numberOfQuestions(), principal);
