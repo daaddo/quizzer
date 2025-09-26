@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,8 +40,10 @@ public class QuestionController {
      * @return a list of questions
      */
     @GetMapping("/{quizId}")
-    public ResponseEntity<List<GetQuestionDto>> getAllQuestions(@AuthenticationPrincipal CustomUserDetails principal  , @PathVariable Integer quizId) {
+    public ResponseEntity<List<GetQuestionDto>> getAllQuestions(@AuthenticationPrincipal CustomUserDetails principal  ,
+                                                                @PathVariable Integer quizId) {
 
+        log.info("principal : "+principal.getId());
         return ResponseEntity.ok(questionService.getAllQuestions(principal.getId(),quizId));
     }
 

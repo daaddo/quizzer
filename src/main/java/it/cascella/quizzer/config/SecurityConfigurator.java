@@ -15,9 +15,11 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,6 +38,8 @@ public class SecurityConfigurator {
     @Value("${allowed.origins}" )
     private String allowedOrigins;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     private final CustomOidcUserService customOidcUserService;
     private AuthenticationProvider authenticationProvider;
@@ -54,16 +58,26 @@ public class SecurityConfigurator {
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
                 .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
+                .requestMatchers("/").permitAll()
         );
         http.authenticationProvider(authenticationProvider);
         http.formLogin(withDefaults());
 
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/") // dove reindirizzare dopo il logout
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+        );
+
         http.sessionManagement(sessionManagement -> sessionManagement
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) //NON VOGLIAMO SESSIONI PERSISTENTI MA OGNI RICHIESTA DEVE ESSERE AUTENTICATA
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) //NON VOGLIAMO SESSIONI PERSISTENTI MA OGNI RICHIESTA DEVE ESSERE AUTENTICATA
                         .sessionFixation().newSession()
                         .invalidSessionUrl("/timeout")
                         .maximumSessions(3) //numero massimo di sessioni per utente
@@ -75,7 +89,7 @@ public class SecurityConfigurator {
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(customOidcUserService)
                 )
-                .defaultSuccessUrl("http://localhost:5173/home", true)
+                .defaultSuccessUrl(frontendUrl, true)
         );
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -83,6 +97,7 @@ public class SecurityConfigurator {
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

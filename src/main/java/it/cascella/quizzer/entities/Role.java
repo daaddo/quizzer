@@ -11,4 +11,12 @@ public enum Role {
             default -> null;
         };
     }
+
+    public String getName() {
+
+        return switch (this) {
+            case ADMIN -> "ADMIN";
+            case USER -> "USER";
+        };
+    }
 }

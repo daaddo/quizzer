@@ -36,6 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
         // la richiesta corrente nella stateless non dovrebbe mai avvenire tuttavia per gli altri tipi di state è possibile
         // che l utente sia autenticato prima di arrivare a questo filtro
         if(SecurityContextHolder.getContext().getAuthentication() != null) {
+            log.info("Authentication found skipping filter");
             filterChain.doFilter(request, response);
             return;
         }

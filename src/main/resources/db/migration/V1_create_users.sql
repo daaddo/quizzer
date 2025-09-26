@@ -46,7 +46,7 @@ INSERT INTO users( username, password, email, role)
 
 
 INSERT INTO quiz (title, description, user_id,questions_count)
-VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users LIMIT 1),(SELECT COUNT(*) FROM question));
+VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users where users.username like "Claudia" LIMIT 1),(SELECT COUNT(*) FROM question));
 
 ALTER TABLE question
     ADD COLUMN quiz_id INT ,
@@ -57,9 +57,16 @@ ALTER TABLE question
         FOREIGN KEY (quiz_id) REFERENCES quiz(id) ON DELETE CASCADE;
 
 update question
-set quiz_id = (select id from quiz limit1), user_id = (select id from users limit 1);
+set quiz_id = (select id from quiz limit1), user_id = (select id from users where users.username like "Claudia" limit 1);
 
 
 ALTER TABLE question
 MODIFY COLUMN quiz_id INT NOT NULL,
 MODIFY COLUMN user_id INT NOT NULL;
+
+
+SELECT q.*
+FROM (select q.* from question q where q.quiz_id = 1) q
+WHERE q.user_id = 1;
+
+select * from question
