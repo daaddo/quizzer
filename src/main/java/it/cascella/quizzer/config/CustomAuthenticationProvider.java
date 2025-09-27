@@ -9,6 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -31,14 +32,19 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         String username = authentication.getName();
         String password = authentication.getCredentials().toString();
         log.info("User {} requested Authentication", username);
-        Users user = userService.loadUserByUsernameOrEmail(username);
-        if (user == null || password == null || password.isEmpty() || username.isEmpty()) {
-            throw new BadCredentialsException("Credenziali non valide");
-        }
-        if ((username.equalsIgnoreCase(user.getUsername()) || username.equalsIgnoreCase(user.getEmail())) && user.isAccountNonLocked() && passwordEncoder.matches(password, user.getPassword())) {
-            log.info("User {} authenticated successfully", username);
-            return new UsernamePasswordAuthenticationToken(username, password, user.getAuthorities());
-        } else {
+        try {
+            Users user = userService.loadUserByUsernameOrEmail(username);
+            if (user == null || password == null || password.isEmpty() || username.isEmpty()) {
+                throw new BadCredentialsException("Credenziali non valide");
+            }
+            if ((username.equalsIgnoreCase(user.getUsername()) || username.equalsIgnoreCase(user.getEmail())) && user.isAccountNonLocked() && passwordEncoder.matches(password, user.getPassword())) {
+                log.info("User {} authenticated successfully", username);
+                return new UsernamePasswordAuthenticationToken(username, password, user.getAuthorities());
+            } else {
+                throw new BadCredentialsException("Credenziali non valide");
+            }
+        }catch (UsernameNotFoundException e){
+            log.warn("User {} not found", username);
             throw new BadCredentialsException("Credenziali non valide");
         }
     }

@@ -44,6 +44,7 @@ public class Users implements CustomUserDetails {
     private  String profilePictureUrl;
 
 
+    @Transient
     private OidcIdToken tokenId;
 
 

@@ -3,6 +3,8 @@ package it.cascella.quizzer.config;
 
 import it.cascella.quizzer.filters.JwtFilter;
 import it.cascella.quizzer.service.CustomOidcUserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +17,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -41,6 +44,9 @@ public class SecurityConfigurator {
     @Value("${frontend.url}")
     private String frontendUrl;
 
+    @Value("${logout.uri}")
+    private String googleOIDClogoutUrl;
+
     private final CustomOidcUserService customOidcUserService;
     private AuthenticationProvider authenticationProvider;
 
@@ -60,9 +66,10 @@ public class SecurityConfigurator {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/users/status").permitAll()
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
                 .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm").permitAll()
-                .requestMatchers("/api/v1/**").authenticated()
+                .requestMatchers("/api/v1/**","/logout").authenticated()
                 .requestMatchers("/").permitAll()
         );
         http.authenticationProvider(authenticationProvider);
@@ -90,6 +97,11 @@ public class SecurityConfigurator {
                         .oidcUserService(customOidcUserService)
                 )
                 .defaultSuccessUrl(frontendUrl, true)
+
+        );
+        http.logout(logout -> logout
+
+                .logoutSuccessHandler(oidcLogoutSuccessHandler())
         );
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -98,6 +110,17 @@ public class SecurityConfigurator {
         return http.build();
     }
 
+    private LogoutSuccessHandler oidcLogoutSuccessHandler() {
+        return (HttpServletRequest request, HttpServletResponse response,
+                Authentication authentication) -> {
+
+            log.info("Performing OIDC logout");
+            String logoutUrl = googleOIDClogoutUrl;
+            String redirectUri = "http://localhost:8080/"; // dove tornare dopo logout
+
+            response.sendRedirect(logoutUrl + "?redirect_uri=" + redirectUri);
+        };
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

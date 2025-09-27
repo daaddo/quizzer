@@ -7,6 +7,8 @@ import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.MailService;
 import it.cascella.quizzer.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -16,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Slf4j
@@ -69,14 +74,51 @@ public class UserController {
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{8,}$",
             message = "La password deve contenere almeno 1 minuscola, 1 maiuscola e 1 numero"
     )
-    @Size(min = 8, message = "La password deve essere di almeno 8 caratteri") String newPassword) {
-
-    }
+    @Size(min = 8, message = "La password deve essere di almeno 8 caratteri") String newPassword) {}
     @PostMapping("/set/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) throws QuizzerException {
         log.info("Resetting password with token: {}", request.token());
         mailService.resetPassword(request.token(), request.newPassword());
         return ResponseEntity.ok("Password reset successfully");
 
+    }
+
+    @GetMapping("/amIauthenticated")
+    public ResponseEntity<String> amIAuthenticated(@AuthenticationPrincipal CustomUserDetails principal) {
+        log.info("Checking authentication for user: {}", principal.getUsername());
+        return ResponseEntity.ok("User is authenticated");
+    }
+
+
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> checkAuthentication(
+            HttpServletRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        Map<String, Object> response = new HashMap<>();
+        boolean hasRememberMeCookie = false;
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("remember-me".equals(cookie.getName())) {
+                    hasRememberMeCookie = true;
+                    break;
+                }
+            }
+        }
+
+        if (principal != null) {
+            log.info("Authenticated check for user: {}", principal.getUsername());
+            response.put("authenticated", true);
+            response.put("username", principal.getUsername());
+            response.put("hasRememberMeCookie", hasRememberMeCookie);
+            return ResponseEntity.ok(response);
+        } else {
+            log.info("Authenticated check: no authenticated user");
+            response.put("authenticated", false);
+            response.put("hasRememberMeCookie", hasRememberMeCookie);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 }
