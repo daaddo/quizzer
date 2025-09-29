@@ -1,10 +1,10 @@
-package it.cascella.quizzer.entities;
+package it.cascella.quizzer.repository;
 
+import it.cascella.quizzer.entities.Quiz;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.Repository;
 
 import java.util.Optional;
 

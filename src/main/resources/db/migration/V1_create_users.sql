@@ -64,9 +64,27 @@ ALTER TABLE question
 MODIFY COLUMN quiz_id INT NOT NULL,
 MODIFY COLUMN user_id INT NOT NULL;
 
+CREATE TABLE IF NOT EXISTS issued_quiz(
+    token_id VARCHAR(32) PRIMARY KEY NOT NULL UNIQUE ,
+    issuer_id INT NOT NULL,
+    quiz_id INT NOT NULL,
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP DEFAULT NULL,
+    duration DATETIME DEFAULT NULL,
+    FOREIGN KEY (issuer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quiz(id) ON DELETE SET NULL
+);
 
-SELECT q.*
-FROM (select q.* from question q where q.quiz_id = 1) q
-WHERE q.user_id = 1;
 
-select * from question
+
+CREATE TABLE IF NOT EXISTS user_quiz_attempt (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    issued_quiz_id INT NOT NULL,
+    score INT NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    finished_at TIMESTAMP DEFAULT NULL,
+    questions JSON NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (issued_quiz_id) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
+)

@@ -5,14 +5,17 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 
 @AllArgsConstructor
 @Getter
 @Setter
 public class QuizUserInformation {
-    private CustomUserDetails details;
     private Status status;
     private Integer score;
+    private Date startedAt;
+    private Date completedAt;
 
     public enum Status {
         NOT_STARTED,

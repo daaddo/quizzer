@@ -4,7 +4,7 @@ package it.cascella.quizzer.service;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.Answer;
 import it.cascella.quizzer.entities.Question;
-import it.cascella.quizzer.entities.QuizRepository;
+import it.cascella.quizzer.repository.QuizRepository;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.AnswerRepository;
 import it.cascella.quizzer.repository.QuestionRepository;

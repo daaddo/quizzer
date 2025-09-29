@@ -3,11 +3,12 @@ package it.cascella.quizzer.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import it.cascella.quizzer.controller.QuizController;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.entities.Question;
 import it.cascella.quizzer.entities.Quiz;
-import it.cascella.quizzer.entities.QuizRepository;
+import it.cascella.quizzer.repository.QuizRepository;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.repository.QuestionRepository;
 import it.cascella.quizzer.repository.UserRepository;
@@ -16,8 +17,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -74,13 +77,15 @@ public class QuizService {
         Quiz quiz = quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
         String token = tokenGenerator.generateToken(32);
+
+        //todo insert nel db
         cache.put(token, new QuizInformations(details,
                 quizId,
                 quiz.getTitle(),
                 quiz.getDescription(),
                 numbOfQuestions,
                 durationInMinutes,
-                new LinkedList<QuizUserInformation>()
+                new ConcurrentHashMap<>()
                 )
         );
         return String.format(token);
@@ -89,11 +94,14 @@ public class QuizService {
     public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
         QuizInformations quizInformations = cache.getIfPresent(token);
         Integer quizId = quizInformations.getQuizId();
-
-        if (quizInformations.getUsersTakingTheQuiz().stream().anyMatch(user -> user.getDetails().getId() == principal.getId())) {
+        if (quizInformations.getUsersTakingTheQuiz().containsKey(principal)) {
             throw new QuizzerException("User has already taken the quiz", HttpStatus.FORBIDDEN.value());
         }
+        quizInformations.getUsersTakingTheQuiz().put(principal,new QuizUserInformation( QuizUserInformation.Status.IN_PROGRESS,-1, new Date(), null));
+
         List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizId,quizInformations.getOwner().getId());
+        //todo insert nel db
+
         return questions.stream()
                 .map(question -> new GetQuestionDtoNotCorrected(
                         question.getId(),
@@ -105,5 +113,18 @@ public class QuizService {
                         question.getMultipleChoice()  )
                 )
                 .toList();
+    }
+
+    public List<QuizController.AnswerResponse> submitAnswers(String token, List<QuizController.AnswerResponse> answers, CustomUserDetails principal) throws QuizzerException {
+        QuizInformations quizInformations = cache.getIfPresent(token);
+        //TODO SALVARE SU DB IL TOKEN è INUTILE QUA IN CACHE
+        if (quizInformations == null) {
+            throw new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value());
+        }
+        if (!quizInformations.getUsersTakingTheQuiz().containsKey(principal) || quizInformations.getUsersTakingTheQuiz().get(principal).getStatus() != QuizUserInformation.Status.IN_PROGRESS) {
+            throw new QuizzerException("User has not started the quiz or has already submitted it", HttpStatus.FORBIDDEN.value());
+        }
+        List<QuizController.AnswerResponse> response = new LinkedList<>();
+
     }
 }

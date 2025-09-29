@@ -68,4 +68,17 @@ public class QuizController {
         log.info("Fetching for {}", principal);
         return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));
     }
+
+
+    public record AnswerResponse(
+            Integer questionId,
+            List<Integer> selectedOptions,
+            List<Integer> correctOptions
+    ) {}
+
+    @PostMapping("/postAnswers")
+    public ResponseEntity<List<AnswerResponse>> submitAnswers(@RequestParam String token, @RequestBody List<AnswerResponse> answers, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Submitting answers for token: {}", token);
+        return ResponseEntity.ok(quizService.submitAnswers(token, answers, principal));
+    }
 }

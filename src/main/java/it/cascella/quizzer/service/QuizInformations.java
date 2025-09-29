@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
@@ -17,5 +19,5 @@ public class QuizInformations {
     private String description;
     private Integer numberOfQuestions;
     private Integer durationInMinutes;
-    private List<QuizUserInformation> usersTakingTheQuiz;
+    private ConcurrentHashMap<CustomUserDetails,QuizUserInformation> usersTakingTheQuiz;
 }
