@@ -68,9 +68,10 @@ CREATE TABLE IF NOT EXISTS issued_quiz(
     token_id VARCHAR(32) PRIMARY KEY NOT NULL UNIQUE ,
     issuer_id INT NOT NULL,
     quiz_id INT ,
+    number_of_questions INT NOT NULL,
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP DEFAULT NULL,
-    duration DATETIME DEFAULT NULL,
+    duration TIME DEFAULT NULL,
     FOREIGN KEY (issuer_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (quiz_id) REFERENCES quiz(id) ON DELETE SET NULL
 );
@@ -84,6 +85,7 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     score INT NOT NULL,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished_at TIMESTAMP DEFAULT NULL,
+    status ENUM('IN_PROGRESS', 'COMPLETED') NOT NULL DEFAULT 'IN_PROGRESS',
     questions JSON NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE

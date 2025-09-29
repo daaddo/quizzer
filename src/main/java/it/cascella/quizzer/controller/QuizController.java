@@ -13,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.sql.Time;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -48,12 +50,13 @@ public class QuizController {
     record  LinkRequest(
             Integer quizId,
             Integer numberOfQuestions,
-            Integer durationInMinutes
+            Integer durationInMinutes,
+            Time expirationDate
     ) {}
     @PostMapping("/link")
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
-        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.durationInMinutes,params.numberOfQuestions(), principal);
+        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.durationInMinutes, principal);
         return ResponseEntity.ok(token);
     }
 

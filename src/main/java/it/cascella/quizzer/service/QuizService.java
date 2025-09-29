@@ -5,22 +5,17 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.cascella.quizzer.controller.QuizController;
 import it.cascella.quizzer.dtos.*;
-import it.cascella.quizzer.entities.CustomUserDetails;
-import it.cascella.quizzer.entities.Question;
-import it.cascella.quizzer.entities.Quiz;
-import it.cascella.quizzer.repository.QuizRepository;
+import it.cascella.quizzer.entities.*;
+import it.cascella.quizzer.repository.*;
 import it.cascella.quizzer.exceptions.QuizzerException;
-import it.cascella.quizzer.repository.QuestionRepository;
-import it.cascella.quizzer.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.sql.Time;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -31,8 +26,10 @@ public class QuizService {
     private final Cache<String, QuizInformations> cache;
     private final TokenGenerator tokenGenerator;
     private final QuestionRepository questionRepository;
+    private final IssuedQuizRepository issuedQuizRepository;
+    private final UserQuizAttemptRepository userQuizAttemptRepository;
 
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
@@ -40,6 +37,8 @@ public class QuizService {
         this.cache = Caffeine.newBuilder()
                 .expireAfterWrite(12, TimeUnit.HOURS) // TTL 15 minuti
                 .build();
+        this.issuedQuizRepository = issuedQuizRepository;
+        this.userQuizAttemptRepository = userQuizAttemptRepository;
     }
 
     @Transactional
@@ -73,36 +72,28 @@ public class QuizService {
         }
     }
 
-    public String generateLink(Integer quizId,Integer numbOfQuestions, Integer durationInMinutes, Integer id, CustomUserDetails details) throws QuizzerException {
+    public String generateLink(Integer quizId, Integer numbOfQuestions, Time duration, LocalDateTime expirationDate, CustomUserDetails details) throws QuizzerException {
         // Check if the quiz exists and belongs to the user
-        Quiz quiz = quizRepository.findByIdAndUserId_Id(quizId, details.getId())
+        quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
         String token = tokenGenerator.generateToken(32);
-
-
-        //todo insert nel db
-        cache.put(token, new QuizInformations(details,
-                quizId,
-                quiz.getTitle(),
-                quiz.getDescription(),
-                numbOfQuestions,
-                durationInMinutes,
-                new ConcurrentHashMap<>()
-                )
-        );
+        while (issuedQuizRepository.getByTokenId(token).isPresent()){
+            token = tokenGenerator.generateToken(32);
+        }
+        issuedQuizRepository.insertIssuedQuiz(token,details.getId(),quizId,expirationDate,duration,numbOfQuestions);
         return String.format(token);
     }
 
     public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
-        QuizInformations quizInformations = cache.getIfPresent(token);
-        Integer quizId = quizInformations.getQuizId();
-        if (quizInformations.getUsersTakingTheQuiz().containsKey(principal)) {
-            throw new QuizzerException("User has already taken the quiz", HttpStatus.FORBIDDEN.value());
-        }
-        quizInformations.getUsersTakingTheQuiz().put(principal,new QuizUserInformation( QuizUserInformation.Status.IN_PROGRESS,-1, new Date(), null));
 
-        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizId,quizInformations.getOwner().getId());
-        //todo insert nel db
+        IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value()));
+        if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
+            throw new QuizzerException("User has already requested the quiz", HttpStatus.FORBIDDEN.value());
+        }
+        userQuizAttemptRepository.insertIssuedQuiz(principal.getId(), token);
+
+
+        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());
 
         return questions.stream()
                 .map(question -> new GetQuestionDtoNotCorrected(
@@ -117,9 +108,10 @@ public class QuizService {
                 .toList();
     }
 
+
+
     public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer,AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException {
         QuizInformations quizInformations = cache.getIfPresent(token);
-        //TODO SALVARE SU DB IL TOKEN è INUTILE QUA IN CACHE
         if (quizInformations == null) {
             throw new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value());
         }

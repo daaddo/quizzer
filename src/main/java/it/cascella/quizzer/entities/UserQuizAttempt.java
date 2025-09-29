@@ -48,6 +48,11 @@ public class UserQuizAttempt {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "questions", nullable = false)
     private Map<String, Object> questions;
+    @NotNull
+    @ColumnDefault("'IN_PROGRESS'")
+    @Enumerated
+    @Column(name = "status", nullable = false)
+    private ProgressStatus status;
 
 
 }
