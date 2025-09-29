@@ -108,4 +108,26 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
             nativeQuery = true
     )
     void saveQuestion(Integer integer, String principal);
+
+
+    record CorrectionAnswer(
+            Integer answerId,
+            String answer,
+            Boolean isCorrect,
+            Integer questionId,
+            String questionTitle,
+            Boolean isMultipleChoice,
+            Integer userId
+    ) {}
+    @Query(value = """
+    SELECT a.id, a.answer, a.is_correct, q.id, title, is_multiple_choice, user_id
+    FROM answer a
+    JOIN question q ON a.question_id = q.id
+    WHERE q.quiz_id = :quizId
+    ORDER BY a.question_id, a.is_correct;
+"""
+            ,nativeQuery = true
+    )
+    List<CorrectionAnswer> getAnswersByQuizId(Integer quizId);
+
 }

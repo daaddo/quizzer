@@ -67,7 +67,7 @@ MODIFY COLUMN user_id INT NOT NULL;
 CREATE TABLE IF NOT EXISTS issued_quiz(
     token_id VARCHAR(32) PRIMARY KEY NOT NULL UNIQUE ,
     issuer_id INT NOT NULL,
-    quiz_id INT NOT NULL,
+    quiz_id INT ,
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP DEFAULT NULL,
     duration DATETIME DEFAULT NULL,
@@ -80,11 +80,17 @@ CREATE TABLE IF NOT EXISTS issued_quiz(
 CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    issued_quiz_id INT NOT NULL,
+    token VARCHAR(32) NOT NULL,
     score INT NOT NULL,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished_at TIMESTAMP DEFAULT NULL,
     questions JSON NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (issued_quiz_id) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
-)
+    FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
+);/*
+
+SELECT a.id, a.answer, a.is_correct, q.id, title, is_multiple_choice, user_id
+FROM answer a
+         JOIN question q ON a.question_id = q.id
+WHERE q.quiz_id = 1
+ORDER BY a.question_id, a.is_correct;*/

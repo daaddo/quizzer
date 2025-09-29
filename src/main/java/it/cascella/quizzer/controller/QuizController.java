@@ -1,10 +1,7 @@
 package it.cascella.quizzer.controller;
 
 import io.jsonwebtoken.Jwt;
-import it.cascella.quizzer.dtos.GetQuestionDto;
-import it.cascella.quizzer.dtos.GetQuestionDtoNotCorrected;
-import it.cascella.quizzer.dtos.NewQuizDTO;
-import it.cascella.quizzer.dtos.PutQuizDTO;
+import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.QuizService;
@@ -16,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
@@ -70,14 +68,9 @@ public class QuizController {
     }
 
 
-    public record AnswerResponse(
-            Integer questionId,
-            List<Integer> selectedOptions,
-            List<Integer> correctOptions
-    ) {}
 
     @PostMapping("/postAnswers")
-    public ResponseEntity<List<AnswerResponse>> submitAnswers(@RequestParam String token, @RequestBody List<AnswerResponse> answers, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<HashMap<Integer, AnswerResponse>> submitAnswers(@RequestParam String token, @RequestBody HashMap<Integer,AnswerResponse> answers, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("Submitting answers for token: {}", token);
         return ResponseEntity.ok(quizService.submitAnswers(token, answers, principal));
     }

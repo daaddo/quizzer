@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,6 +79,7 @@ public class QuizService {
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
         String token = tokenGenerator.generateToken(32);
 
+
         //todo insert nel db
         cache.put(token, new QuizInformations(details,
                 quizId,
@@ -115,7 +117,7 @@ public class QuizService {
                 .toList();
     }
 
-    public List<QuizController.AnswerResponse> submitAnswers(String token, List<QuizController.AnswerResponse> answers, CustomUserDetails principal) throws QuizzerException {
+    public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer,AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException {
         QuizInformations quizInformations = cache.getIfPresent(token);
         //TODO SALVARE SU DB IL TOKEN è INUTILE QUA IN CACHE
         if (quizInformations == null) {
@@ -124,7 +126,13 @@ public class QuizService {
         if (!quizInformations.getUsersTakingTheQuiz().containsKey(principal) || quizInformations.getUsersTakingTheQuiz().get(principal).getStatus() != QuizUserInformation.Status.IN_PROGRESS) {
             throw new QuizzerException("User has not started the quiz or has already submitted it", HttpStatus.FORBIDDEN.value());
         }
-        List<QuizController.AnswerResponse> response = new LinkedList<>();
-
+        List<QuestionRepository.CorrectionAnswer> answersCorrection = questionRepository.getAnswersByQuizId(quizInformations.getQuizId());
+        for (QuestionRepository.CorrectionAnswer answer : answersCorrection) {
+            if (!answer.isCorrect()){
+                continue;
+            }
+            answersByUser.get(answer.questionId()).getCorrectOptions().add(answer.answerId());
+        }
+        return answersByUser;
     }
 }
