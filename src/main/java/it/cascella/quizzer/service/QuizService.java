@@ -9,16 +9,21 @@ import it.cascella.quizzer.entities.*;
 import it.cascella.quizzer.repository.*;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.sql.Time;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 public class QuizService {
     private final QuizRepository quizRepository;
@@ -77,6 +82,7 @@ public class QuizService {
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
         String token = tokenGenerator.generateToken(32);
+        log.info("Generated token: {}", token);
         while (issuedQuizRepository.getByTokenId(token).isPresent()){
             token = tokenGenerator.generateToken(32);
         }
@@ -84,7 +90,7 @@ public class QuizService {
         return String.format(token);
     }
 
-    public List<GetQuestionDtoNotCorrected> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
+    public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
 
         IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value()));
         if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
@@ -94,8 +100,10 @@ public class QuizService {
 
 
         List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());
+        QuizInfos quizInfos = issuedQuizRepository.getIssuedQuizInfosForUser(token).orElseThrow(() -> new QuizzerException("No quiz info found for token: " + token, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> map = new HashMap<>();
 
-        return questions.stream()
+        map.put(quizInfos,questions.stream()
                 .map(question -> new GetQuestionDtoNotCorrected(
                         question.getId(),
                         question.getTitle(),
@@ -105,26 +113,59 @@ public class QuizService {
                                 .toList(),
                         question.getMultipleChoice()  )
                 )
-                .toList();
+                .toList());
+        return map;
     }
 
 
 
     public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer,AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException {
-        QuizInformations quizInformations = cache.getIfPresent(token);
-        if (quizInformations == null) {
-            throw new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value());
+        //todo add protection to check if question_id belongs to the quiz
+
+        log.info("Submitting answers for token: {}, answers: {}", token, answersByUser.toString());
+        IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+
+        Optional<UserQuizAttempt> byTokenAndUserId = userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId());
+        if (byTokenAndUserId.isEmpty()){
+            throw new QuizzerException("User has not started the quiz", HttpStatus.FORBIDDEN.value());
         }
-        if (!quizInformations.getUsersTakingTheQuiz().containsKey(principal) || quizInformations.getUsersTakingTheQuiz().get(principal).getStatus() != QuizUserInformation.Status.IN_PROGRESS) {
-            throw new QuizzerException("User has not started the quiz or has already submitted it", HttpStatus.FORBIDDEN.value());
+        if (byTokenAndUserId.get().getStatus().equals(ProgressStatus.COMPLETED)){
+            throw new QuizzerException("User has already submitted the quiz", HttpStatus.FORBIDDEN.value());
         }
-        List<QuestionRepository.CorrectionAnswer> answersCorrection = questionRepository.getAnswersByQuizId(quizInformations.getQuizId());
+
+        //prendiamo le risposte  dal db
+        List<QuestionRepository.CorrectionAnswer> answersCorrection = questionRepository.getAnswersByQuizId(quizInformations.getQuiz().getId());
+        log.trace("Correction answers: {}", answersCorrection.toString());
+
         for (QuestionRepository.CorrectionAnswer answer : answersCorrection) {
             if (!answer.isCorrect()){
                 continue;
             }
-            answersByUser.get(answer.questionId()).getCorrectOptions().add(answer.answerId());
+            answersByUser.computeIfPresent(answer.questionId(), (k, answered) -> {
+                answered.getCorrectOptions().add(answer.answerId());
+                return answered;
+            });
         }
+        byTokenAndUserId.get().setStatus(ProgressStatus.COMPLETED);
+        byTokenAndUserId.get().setFinishedAt(Instant.now());
+        byTokenAndUserId.get().setQuestions(answersByUser);
+        byTokenAndUserId.get().setScore(calculateScore(answersByUser));
+        userQuizAttemptRepository.save(byTokenAndUserId.get());
+
         return answersByUser;
+    }
+
+    private @NotNull Integer calculateScore(HashMap<Integer, AnswerResponse> answersByUser) {
+        int score = 0;
+        for (Map.Entry<Integer, AnswerResponse> entry : answersByUser.entrySet()) {
+            AnswerResponse answerResponse = entry.getValue();
+            Set<Integer> userAnswers = new HashSet<>(answerResponse.getSelectedOptions());
+            Set<Integer> correctAnswers = new HashSet<>(answerResponse.getCorrectOptions());
+            if (userAnswers.equals(correctAnswers)) {
+                score++;
+            }
+        }
+
+        return score;
     }
 }

@@ -1,5 +1,6 @@
 package it.cascella.quizzer.repository;
 
+import it.cascella.quizzer.dtos.UserQuizAttemptDto;
 import it.cascella.quizzer.entities.IssuedQuiz;
 import it.cascella.quizzer.entities.UserQuizAttempt;
 import jakarta.transaction.Transactional;
@@ -43,4 +44,15 @@ public interface UserQuizAttemptRepository extends CrudRepository<UserQuizAttemp
             nativeQuery = true
     )
     Optional<UserQuizAttempt> getByTokenAndUser_Id(String token, Integer userId);
+
+    @Query(
+            value = """
+            SELECT u.*, u2.username
+            FROM user_quiz_attempt u
+            JOIN quizzer.users u2 on u.user_id = u2.id
+            WHERE token = :token
+            """,
+            nativeQuery = true
+    )
+    List<UserQuizAttemptDto> getAllByToken(String token);
 }

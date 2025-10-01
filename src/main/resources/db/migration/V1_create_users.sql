@@ -44,7 +44,6 @@ value ('Claudia','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXP
 INSERT INTO users( username, password, email, role)
     value ('Admin','{bcrypt}$2a$12$h3J.W9HPGt.MCdhgnYNDiuFuqvn1yfDmZIJFOJTD5VLCmXPzxNP4C', 'david.cascellaa.5@gmail.com', 'ADMIN');
 
-
 INSERT INTO quiz (title, description, user_id,questions_count)
 VALUES ('Sample Quiz', 'This is a sample quiz description.', (SELECT id FROM users where users.username like "Claudia" LIMIT 1),(SELECT COUNT(*) FROM question));
 
@@ -65,7 +64,7 @@ MODIFY COLUMN quiz_id INT NOT NULL,
 MODIFY COLUMN user_id INT NOT NULL;
 
 CREATE TABLE IF NOT EXISTS issued_quiz(
-    token_id VARCHAR(32) PRIMARY KEY NOT NULL UNIQUE ,
+    token_id BINARY(32) PRIMARY KEY NOT NULL UNIQUE ,
     issuer_id INT NOT NULL,
     quiz_id INT ,
     number_of_questions INT NOT NULL,
@@ -81,12 +80,12 @@ CREATE TABLE IF NOT EXISTS issued_quiz(
 CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    token VARCHAR(32) NOT NULL,
-    score INT NOT NULL,
+    token BINARY(32) NOT NULL,
+    score INT,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished_at TIMESTAMP DEFAULT NULL,
     status ENUM('IN_PROGRESS', 'COMPLETED') NOT NULL DEFAULT 'IN_PROGRESS',
-    questions JSON NOT NULL,
+    questions JSON ,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );/*

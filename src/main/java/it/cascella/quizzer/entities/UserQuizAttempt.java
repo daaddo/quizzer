@@ -1,5 +1,6 @@
 package it.cascella.quizzer.entities;
 
+import it.cascella.quizzer.dtos.AnswerResponse;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -47,10 +48,10 @@ public class UserQuizAttempt {
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "questions", nullable = false)
-    private Map<String, Object> questions;
+    private Map<Integer, AnswerResponse> questions;
     @NotNull
     @ColumnDefault("'IN_PROGRESS'")
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ProgressStatus status;
 

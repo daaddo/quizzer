@@ -1,8 +1,10 @@
 package it.cascella.quizzer.controller;
 
 
+import it.cascella.quizzer.dtos.IssuedQuizInfosDto;
 import it.cascella.quizzer.dtos.NewUserDTO;
 import it.cascella.quizzer.dtos.UserInformationDTO;
+import it.cascella.quizzer.dtos.UserQuizAttemptDto;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.MailService;
@@ -20,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -120,5 +123,16 @@ public class UserController {
             response.put("hasRememberMeCookie", hasRememberMeCookie);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
+    }
+
+
+    @GetMapping("/issued-quizzes/{quizId}")
+    public ResponseEntity<List<IssuedQuizInfosDto>> getIssuedQuizzes(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Integer quizId) {
+        return ResponseEntity.ok(userService.getIssuedQuizzes(principal, quizId));
+    }
+
+    @GetMapping("/issued-quizzes-infos/{token}")
+    public ResponseEntity<List<UserQuizAttemptDto>> getIssuedQuizInfos(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable String token) throws QuizzerException {
+        return ResponseEntity.ok(userService.getIssuedQuizInfo(principal, token));
     }
 }

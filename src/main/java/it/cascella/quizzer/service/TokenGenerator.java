@@ -14,7 +14,7 @@ public class TokenGenerator {
     public  String generateToken(int lengthBytes) {
         byte[] token = new byte[lengthBytes];
         secureRandom.nextBytes(token);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(token);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(token).substring(0, lengthBytes);
     }
 
 

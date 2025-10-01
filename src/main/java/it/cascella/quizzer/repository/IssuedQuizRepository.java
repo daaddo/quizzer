@@ -1,5 +1,7 @@
 package it.cascella.quizzer.repository;
 
+import it.cascella.quizzer.dtos.IssuedQuizInfosDto;
+import it.cascella.quizzer.dtos.QuizInfos;
 import it.cascella.quizzer.entities.IssuedQuiz;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -26,4 +28,28 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
     Integer insertIssuedQuiz(String tokenId, Integer issuerId, Integer quizId, LocalDateTime expire, Time duration, Integer numberOfQuestions);
 
     Optional<IssuedQuiz> getByTokenId(String tokenId);
+
+
+    @Query(
+            value = """
+            SELECT iq.*
+            FROM issued_quiz iq
+            WHERE iq.issuer_id = :id
+            ORDER BY iq.issued_at DESC
+            """,
+            nativeQuery = true
+    )
+    List<IssuedQuizInfosDto> getIssuedQuiz(Integer id, Integer quizId);
+
+    @Query(
+            value = """
+            SELECT iq.number_of_questions AS numberOfQuestions, iq.expires_at AS expirationDate, iq.duration AS duration
+            FROM issued_quiz iq
+            WHERE iq.token_id = :token
+            ORDER BY iq.issued_at DESC
+            LIMIT 1
+            """,
+            nativeQuery = true
+    )
+    Optional<QuizInfos> getIssuedQuizInfosForUser(String token);
 }

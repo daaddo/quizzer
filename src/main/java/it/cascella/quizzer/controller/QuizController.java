@@ -16,7 +16,9 @@ import java.security.Principal;
 import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -50,13 +52,13 @@ public class QuizController {
     record  LinkRequest(
             Integer quizId,
             Integer numberOfQuestions,
-            Integer durationInMinutes,
-            Time expirationDate
+            Time duration,
+            LocalDateTime expirationDate
     ) {}
     @PostMapping("/link")
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
-        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.durationInMinutes, principal);
+        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.duration,params.expirationDate, principal);
         return ResponseEntity.ok(token);
     }
 
@@ -64,7 +66,7 @@ public class QuizController {
 
 
     @GetMapping("/random")
-    public ResponseEntity<List<GetQuestionDtoNotCorrected>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("Fetching a random set of questions from token: {}", token);
         log.info("Fetching for {}", principal);
         return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));
@@ -72,9 +74,17 @@ public class QuizController {
 
 
 
+
     @PostMapping("/postAnswers")
-    public ResponseEntity<HashMap<Integer, AnswerResponse>> submitAnswers(@RequestParam String token, @RequestBody HashMap<Integer,AnswerResponse> answers, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<HashMap<Integer, AnswerResponse>> submitAnswers(
+            @RequestParam String token,
+            @RequestBody HashMap<Integer,List<Integer>> answers,
+            @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("Submitting answers for token: {}", token);
-        return ResponseEntity.ok(quizService.submitAnswers(token, answers, principal));
+        HashMap<Integer, AnswerResponse> answersByUser = new HashMap<>();
+        for (Map.Entry<Integer, List<Integer>> integerListEntry : answers.entrySet()) {
+            answersByUser.put(integerListEntry.getKey(), new AnswerResponse(integerListEntry.getValue(), new LinkedList<>()));
+        }
+        return ResponseEntity.ok(quizService.submitAnswers(token, answersByUser, principal));
     }
 }
