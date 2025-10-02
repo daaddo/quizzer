@@ -1,7 +1,6 @@
 package it.cascella.quizzer.repository;
 
 import it.cascella.quizzer.dtos.UserQuizAttemptDto;
-import it.cascella.quizzer.entities.IssuedQuiz;
 import it.cascella.quizzer.entities.UserQuizAttempt;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -56,5 +55,14 @@ public interface UserQuizAttemptRepository extends CrudRepository<UserQuizAttemp
     )
     List<UserQuizAttemptDto> getAllByToken(String token);
 
-    void completedQuiz(UserQuizAttempt userQuizAttempt);
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            DELETE FROM user_quiz_attempt
+            WHERE token = :token AND user_id = :userId
+            """,
+            nativeQuery = true
+    )
+    int deleteByTokenAndUserId(String token, Integer userId);
 }

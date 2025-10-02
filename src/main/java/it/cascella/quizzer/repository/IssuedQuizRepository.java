@@ -52,4 +52,39 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
             nativeQuery = true
     )
     Optional<QuizInfos> getIssuedQuizInfosForUser(String token);
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            UPDATE issued_quiz
+            SET expires_at = :expire
+            WHERE token_id = :token
+            """,
+            nativeQuery = true
+    )
+    int updateExpiration(String token, LocalDateTime expire);
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            UPDATE issued_quiz
+            SET number_of_questions = :numberOfQuestions
+            WHERE token_id = :token
+            """,
+            nativeQuery = true
+    )
+    int updateNumberOfQuestions(String token, Integer numberOfQuestions);
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
+            DELETE FROM issued_quiz
+            WHERE token_id = :token
+            """,
+            nativeQuery = true
+    )
+    int deleteByToken(String token);
 }

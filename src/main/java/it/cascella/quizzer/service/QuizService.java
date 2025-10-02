@@ -3,14 +3,12 @@ package it.cascella.quizzer.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.cascella.quizzer.controller.QuizController;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.*;
 import it.cascella.quizzer.repository.*;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
@@ -20,7 +18,6 @@ import java.sql.Time;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -141,16 +138,17 @@ public class QuizService {
             if (!answer.isCorrect()){
                 continue;
             }
-            answersByUser.computeIfPresent(answer.questionId(), (k, answered) -> {
+            if (answersByUser.containsKey(answer.questionId())) {
+                AnswerResponse answered = answersByUser.get(answer.questionId());
                 answered.getCorrectOptions().add(answer.answerId());
-                return answered;
-            });
+                answersByUser.put(answer.questionId(), answered);
+            }
         }
         byTokenAndUserId.get().setStatus(ProgressStatus.COMPLETED);
         byTokenAndUserId.get().setFinishedAt(Instant.now());
         byTokenAndUserId.get().setQuestions(answersByUser);
         byTokenAndUserId.get().setScore(calculateScore(answersByUser));
-        userQuizAttemptRepository.completedQuiz(byTokenAndUserId.get());
+        userQuizAttemptRepository.save(byTokenAndUserId.get());
 
         return answersByUser;
     }
@@ -167,5 +165,64 @@ public class QuizService {
         }
 
         return score;
+    }
+
+    @Transactional
+    @Modifying
+    public void deleteUserAttempt(String token, Integer targetUserId, CustomUserDetails principal) throws QuizzerException {
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+                .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
+            throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
+        }
+        int affected = userQuizAttemptRepository.deleteByTokenAndUserId(token, targetUserId);
+        if (affected == 0) {
+            throw new QuizzerException("Attempt not found", HttpStatus.NOT_FOUND.value());
+        }
+    }
+
+    @Transactional
+    @Modifying
+    public void updateIssuedQuizExpiration(String token, LocalDateTime expiration, CustomUserDetails principal) throws QuizzerException {
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+                .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
+            throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
+        }
+        int affected = issuedQuizRepository.updateExpiration(token, expiration);
+        if (affected == 0) {
+            throw new QuizzerException("Issued quiz not found", HttpStatus.NOT_FOUND.value());
+        }
+    }
+
+    @Transactional
+    @Modifying
+    public void updateIssuedQuizNumberOfQuestions(String token, Integer numberOfQuestions, CustomUserDetails principal) throws QuizzerException {
+        if (numberOfQuestions == null || numberOfQuestions <= 0) {
+            throw new QuizzerException("numberOfQuestions must be > 0", HttpStatus.BAD_REQUEST.value());
+        }
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+                .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
+            throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
+        }
+        int affected = issuedQuizRepository.updateNumberOfQuestions(token, numberOfQuestions);
+        if (affected == 0) {
+            throw new QuizzerException("Issued quiz not found", HttpStatus.NOT_FOUND.value());
+        }
+    }
+
+    @Transactional
+    @Modifying
+    public void deleteIssuedQuiz(String token, CustomUserDetails principal) throws QuizzerException {
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+                .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
+            throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
+        }
+        int affected = issuedQuizRepository.deleteByToken(token);
+        if (affected == 0) {
+            throw new QuizzerException("Issued quiz not found", HttpStatus.NOT_FOUND.value());
+        }
     }
 }

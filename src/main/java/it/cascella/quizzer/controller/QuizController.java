@@ -1,18 +1,14 @@
 package it.cascella.quizzer.controller;
-
-import io.jsonwebtoken.Jwt;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.QuizService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -86,5 +82,78 @@ public class QuizController {
             answersByUser.put(integerListEntry.getKey(), new AnswerResponse(integerListEntry.getValue(), new LinkedList<>()));
         }
         return ResponseEntity.ok(quizService.submitAnswers(token, answersByUser, principal));
+    }
+
+    // --- New endpoints for IssuedQuiz and Attempts management ---
+    record UpdateExpirationRequest(
+            String token,
+            LocalDateTime expirationDate
+    ) {}
+
+    record UpdateNumberOfQuestionsRequest(
+            String token,
+            Integer numberOfQuestions
+    ) {}
+
+    /**
+     * Elimina il tentativo di un utente associato ad un issued quiz.
+     *
+     * Endpoint: DELETE /api/v1/quizzes/attempt
+     * Richiede che l'utente autenticato sia l'issuer del token.
+     *
+     * @param token    token dell'issued quiz
+     * @param userId   id dell'utente di cui eliminare il tentativo
+     * @param principal utente autenticato
+     * @throws QuizzerException se token non valido, issuer non autorizzato o tentativo non trovato
+     */
+    @DeleteMapping("/attempt")
+    public void deleteAttempt(@RequestParam String token, @RequestParam Integer userId, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Deleting attempt for token {} and user {} by issuer {}", token, userId, principal.getUsername());
+        quizService.deleteUserAttempt(token, userId, principal);
+    }
+
+    /**
+     * Aggiorna la data/ora di scadenza di un issued quiz.
+     *
+     * Endpoint: PUT /api/v1/quizzes/issued/expiration
+     *
+     * @param request   payload contenente token ed expirationDate (ISO-8601)
+     * @param principal utente autenticato (deve essere l'issuer)
+     * @throws QuizzerException se token non valido o issuer non autorizzato
+     */
+    @PutMapping("/issued/expiration")
+    public void updateIssuedExpiration(@RequestBody UpdateExpirationRequest request, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Updating expiration for token {} to {} by issuer {}", request.token(), request.expirationDate(), principal.getUsername());
+        quizService.updateIssuedQuizExpiration(request.token(), request.expirationDate(), principal);
+    }
+
+    /**
+     * Aggiorna il numero di domande assegnate all'issued quiz.
+     *
+     * Endpoint: PUT /api/v1/quizzes/issued/number-of-questions
+     *
+     * @param request   payload contenente token e numberOfQuestions (> 0)
+     * @param principal utente autenticato (deve essere l'issuer)
+     * @throws QuizzerException se token non valido, issuer non autorizzato o numero non valido
+     */
+    @PutMapping("/issued/number-of-questions")
+    public void updateIssuedNumberOfQuestions(@RequestBody UpdateNumberOfQuestionsRequest request, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Updating number of questions for token {} to {} by issuer {}", request.token(), request.numberOfQuestions(), principal.getUsername());
+        quizService.updateIssuedQuizNumberOfQuestions(request.token(), request.numberOfQuestions(), principal);
+    }
+
+    /**
+     * Elimina un issued quiz (e i tentativi correlati tramite ON DELETE CASCADE).
+     *
+     * Endpoint: DELETE /api/v1/quizzes/issued
+     *
+     * @param token     token dell'issued quiz da eliminare
+     * @param principal utente autenticato (deve essere l'issuer)
+     * @throws QuizzerException se token non valido o issuer non autorizzato
+     */
+    @DeleteMapping("/issued")
+    public void deleteIssued(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Deleting issued quiz {} by issuer {}", token, principal.getUsername());
+        quizService.deleteIssuedQuiz(token, principal);
     }
 }
