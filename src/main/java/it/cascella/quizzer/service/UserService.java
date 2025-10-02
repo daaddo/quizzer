@@ -3,23 +3,24 @@ package it.cascella.quizzer.service;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.entities.IssuedQuiz;
-import it.cascella.quizzer.entities.UserQuizAttempt;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.repository.IssuedQuizRepository;
 import it.cascella.quizzer.repository.UserQuizAttemptRepository;
 import it.cascella.quizzer.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @Service
 
 public class UserService implements UserDetailsService {
@@ -57,11 +58,14 @@ public class UserService implements UserDetailsService {
 
 
     public List<IssuedQuizInfosDto> getIssuedQuizzes(CustomUserDetails principal, Integer quizId) {
-        return issuedQuizRepository.getIssuedQuiz(principal.getId(), quizId);
+        List<IssuedQuizInfosDto> issuedQuiz = issuedQuizRepository.getIssuedQuiz(principal.getId(), quizId);
+        log.info("token: {} expire at {}, other tostring {}", issuedQuiz.getFirst().getTokenId(),issuedQuiz.getFirst().getExpiresAt(),issuedQuiz.getFirst().getTokenId().toString());
+        return issuedQuiz;
     }
 
     public List<UserQuizAttemptDto> getIssuedQuizInfo(CustomUserDetails principal, String token) throws QuizzerException {
         Optional<IssuedQuiz> byTokenId = issuedQuizRepository.getByTokenId(token);
+
         if (byTokenId.isEmpty()){
             throw new QuizzerException("No issued quiz found for token: " + token, HttpStatus.NOT_FOUND.value());
         }

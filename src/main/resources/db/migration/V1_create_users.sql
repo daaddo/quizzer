@@ -88,7 +88,11 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     questions JSON ,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
-);/*
+);
+select * from issued_quiz WHERE token_id ="a3hCaW5aem5wSnZHdFRSRUZ3NzZGOGNOTlBfT1B4aTk"
+select * from issued_quiz;
+kxBinZznpJvGtTREFw76F8cNNP_OPxi9
+/*
 
 SELECT a.id, a.answer, a.is_correct, q.id, title, is_multiple_choice, user_id
 FROM answer a
