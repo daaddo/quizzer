@@ -55,4 +55,6 @@ public interface UserQuizAttemptRepository extends CrudRepository<UserQuizAttemp
             nativeQuery = true
     )
     List<UserQuizAttemptDto> getAllByToken(String token);
+
+    void completedQuiz(UserQuizAttempt userQuizAttempt);
 }

@@ -89,8 +89,12 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );
+SET time_zone = '+02:00'; -- sessione
+
 select * from issued_quiz WHERE token_id ="a3hCaW5aem5wSnZHdFRSRUZ3NzZGOGNOTlBfT1B4aTk"
 select * from issued_quiz;
+
+select * from user_quiz_attempt;
 kxBinZznpJvGtTREFw76F8cNNP_OPxi9
 /*
 

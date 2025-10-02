@@ -150,7 +150,7 @@ public class QuizService {
         byTokenAndUserId.get().setFinishedAt(Instant.now());
         byTokenAndUserId.get().setQuestions(answersByUser);
         byTokenAndUserId.get().setScore(calculateScore(answersByUser));
-        userQuizAttemptRepository.save(byTokenAndUserId.get());
+        userQuizAttemptRepository.completedQuiz(byTokenAndUserId.get());
 
         return answersByUser;
     }
