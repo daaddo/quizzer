@@ -84,6 +84,32 @@ public class QuizController {
         return ResponseEntity.ok(quizService.submitAnswers(token, answersByUser, principal));
     }
 
+    // --- New endpoint: get questions by token and payload ---
+    /**
+     * Dato un token e un JSON con mappa questionId -> AnswerResponse, valida issuer
+     * e restituisce la lista delle domande complete per gli id forniti.
+     *
+     * Endpoint: Post /api/v1/quizzes/questions-by-token
+     *
+     * Esempio payload:
+     * {
+     *   "token": "...",
+     *   "questions": {"3": {"correctOptions": [7], "selectedOptions": []}, ...}
+     * }
+     */
+    record QuestionsByTokenRequest(
+            String token,
+            Map<Integer, AnswerResponse> questions
+    ) {}
+
+    @PostMapping("/questions-by-token")
+    public ResponseEntity<List<GetQuestionDto>> getQuestionsByToken(@RequestBody QuestionsByTokenRequest request,
+                                                                    @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        return ResponseEntity.ok(
+                quizService.getQuestionsForToken(request.token(), request.questions(), principal)
+        );
+    }
+
     // --- New endpoints for IssuedQuiz and Attempts management ---
     record UpdateExpirationRequest(
             String token,

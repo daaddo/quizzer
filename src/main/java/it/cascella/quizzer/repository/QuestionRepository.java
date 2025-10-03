@@ -130,4 +130,14 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     )
     List<CorrectionAnswer> getAnswersByQuizId(Integer quizId);
 
+    @Query(
+            value = """
+            SELECT q.*
+            FROM question q
+            WHERE q.id IN (:ids) AND q.quiz_id = :quizId
+            """,
+            nativeQuery = true
+    )
+    List<Question> findByIdsInForQuiz(List<Integer> ids, Integer quizId);
+
 }

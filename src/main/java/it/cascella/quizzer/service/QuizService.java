@@ -225,4 +225,32 @@ public class QuizService {
             throw new QuizzerException("Issued quiz not found", HttpStatus.NOT_FOUND.value());
         }
     }
+
+    public List<GetQuestionDto> getQuestionsForToken(String token, Map<Integer, AnswerResponse> questionsPayload, CustomUserDetails principal) throws QuizzerException {
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+                .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
+            throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
+        }
+
+        Integer quizId = issuedQuiz.getQuiz().getId();
+        List<Integer> requestedQuestionIds = new ArrayList<>(questionsPayload.keySet());
+        if (requestedQuestionIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Question> questions = questionRepository.findByIdsInForQuiz(requestedQuestionIds, quizId);
+        if (questions.size() != requestedQuestionIds.size()) {
+            throw new QuizzerException("Some questions do not belong to the quiz", HttpStatus.FORBIDDEN.value());
+        }
+
+        return questions.stream().map(q -> new GetQuestionDto(
+                q.getId(),
+                q.getTitle(),
+                q.getQuestion(),
+                q.getAnswers().stream()
+                        .map(a -> new GetAnswerDto(a.getId(), a.getAnswer(), a.getCorrect()))
+                        .toList()
+        )).toList();
+    }
 }

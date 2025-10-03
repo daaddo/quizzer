@@ -4,6 +4,7 @@ package it.cascella.quizzer.service;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.Answer;
 import it.cascella.quizzer.entities.Question;
+import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.repository.QuizRepository;
 import it.cascella.quizzer.entities.Users;
 import it.cascella.quizzer.repository.AnswerRepository;
@@ -12,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,38 +33,46 @@ public class QuestionService {
         this.quizRepository = quizRepository;
     }
 
-    public Integer createQuestion(CreateQuestionDto createQuestionDto,Integer userId) {
+    @Modifying
+    @Transactional
+    public Integer createQuestion(CreateQuestionDto createQuestionDto,Integer userId) throws QuizzerException {
 
         Question question = new Question();
 
         Users users = questionRepository.verifyQuizExistsInUser(createQuestionDto.quizId(), userId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " +  userId));
+                .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " +  userId,HttpStatus.NOT_FOUND.value()));
 
-
-        question.setTitle(createQuestionDto.title());
-        question.setQuestion(createQuestionDto.question());
-        question.setUser(users);
-        question.setQuiz(quizRepository.findQuizById(createQuestionDto.quizId()));
         int correctAnswers = 0;
-        for (Answer answer : question.getAnswers()) {
-            if(answer.getCorrect()) {
+        for (CreateAnswerDto answer : createQuestionDto.answers()) {
+            if (answer.isCorrect() != null && answer.isCorrect()) {
                 correctAnswers++;
             }
+        }
+        if (correctAnswers < 1) {
+            throw new QuizzerException("At least one correct answer is required", HttpStatus.BAD_REQUEST.value());
         }
         if (correctAnswers >=2) {
             question.setMultipleChoice(true);
         } else {
             question.setMultipleChoice(false);
         }
+        question.setTitle(createQuestionDto.title());
+        question.setQuestion(createQuestionDto.question());
+        question.setUser(users);
+        question.setQuiz(quizRepository.findQuizById(createQuestionDto.quizId()));
         questionRepository.save(question);
 
         for (CreateAnswerDto answer : createQuestionDto.answers()) {
             Answer answerEntity = new Answer();
             answerEntity.setAnswer(answer.answer());
-            answerEntity.setCorrect(answer.correct());
+            answerEntity.setCorrect(answer.isCorrect());
             answerEntity.setQuestion(question);
             answerRepository.save(answerEntity);
+
         }
+
+
+
         quizRepository.incrementQuestionCount(createQuestionDto.quizId());
         return question.getId();
     }

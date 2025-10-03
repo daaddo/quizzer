@@ -5,6 +5,7 @@ import it.cascella.quizzer.dtos.CreateQuestionDto;
 import it.cascella.quizzer.dtos.GetQuestionDto;
 import it.cascella.quizzer.dtos.PutQuestionDTO;
 import it.cascella.quizzer.entities.CustomUserDetails;
+import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.QuestionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ public class QuestionController {
     }
 
     @PostMapping
-    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto,@AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<Integer> createQuestion(@RequestBody CreateQuestionDto createQuestionDto,@AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
 
         return ResponseEntity.ok(questionService.createQuestion(createQuestionDto,principal.getId()));
     }

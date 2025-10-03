@@ -73,7 +73,7 @@ public class SecurityConfigurator {
                 .requestMatchers("/").permitAll()
         );
         http.authenticationProvider(authenticationProvider);
-        http.formLogin(withDefaults());
+        http.formLogin(form -> form.disable());
 
         http.logout(logout -> logout
                 .logoutUrl("/logout")

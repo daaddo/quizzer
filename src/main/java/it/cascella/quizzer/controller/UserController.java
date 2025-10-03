@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 
 @Slf4j
@@ -33,6 +34,12 @@ public class UserController {
 
     private final UserService userService;
     private final MailService mailService;
+    private final ExecutorService executorService = new ThreadPoolExecutor(
+            1, // core pool size (max thread attivi in parallelo)
+            1, // max pool size
+            0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(50) // coda max 50 richieste in attesa
+    );
 
     @Autowired
     public UserController(UserService userService, MailService mailService) {
@@ -49,7 +56,7 @@ public class UserController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody NewUserDTO newUserDTO) {
+    public ResponseEntity<String> registerUser(@RequestBody NewUserDTO newUserDTO) throws QuizzerException {
         log.info("Registering new user with username: {}", newUserDTO.username());
         mailService.registerUser(newUserDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
@@ -57,13 +64,26 @@ public class UserController {
 
     @PostMapping("/confirm")
     public ResponseEntity<String> confirmUser(@RequestParam("token") String token) {
-        log.info("Confirming user with token: {}", token);
-        boolean isConfirmed = mailService.confirmUser(token);
-        if (isConfirmed) {
-            return ResponseEntity.ok("User confirmed successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
+        try {
+            Future<ResponseEntity<String>> submit = executorService.submit(() -> {
+                log.info("Confirming user with token: {}", token);
+                boolean isConfirmed = mailService.confirmUser(token);
+                if (isConfirmed) {
+                    return ResponseEntity.ok("User confirmed successfully");
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
+                }
+            });
+            return submit.get();
+        } catch (RejectedExecutionException e) {
+            // La coda è piena → troppi in attesa
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Troppi utenti in coda, riprova più tardi");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Errore interno");
         }
+
     }
 
     @PostMapping("/forgot-password")

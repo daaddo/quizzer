@@ -23,6 +23,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 
@@ -58,9 +60,13 @@ public class MailService {
 
     }
 
-    public void registerUser(NewUserDTO newUserDTO) {
-        if (userRepository.existsUsersByUsernameOrEmail(newUserDTO.username(), newUserDTO.email())) {
-            throw new IllegalArgumentException("Username or email already in use");
+    public void registerUser(NewUserDTO newUserDTO) throws QuizzerException {
+        Optional<Users> usersByUsernameOrEmail = userRepository.getUsersByUsernameOrEmail(newUserDTO.username(), newUserDTO.email());
+        if (usersByUsernameOrEmail.isPresent()) {
+            if (usersByUsernameOrEmail.get().getUsername().equals(newUserDTO.username())) {
+                throw new QuizzerException("Username already in use", HttpStatus.CONFLICT.value());
+            }
+            throw new QuizzerException("email already in use", HttpStatus.CONFLICT.value());
         }
         String token = tokenGenerator.generateToken(32);
 
@@ -69,8 +75,9 @@ public class MailService {
 
         NewUserDTO toSave = new NewUserDTO(
                 newUserDTO.username(),
-                newUserDTO.email(),
-                passwordEncoder.encode(newUserDTO.password())
+                passwordEncoder.encode(newUserDTO.password()),
+                newUserDTO.email()
+
         );
         cacheRegister.put(token, toSave);
     }

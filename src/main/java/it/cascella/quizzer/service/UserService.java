@@ -52,13 +52,16 @@ public class UserService implements UserDetailsService {
 
     public UserInformationDTO getUserInformation(CustomUserDetails user) {
         List<QuizInformationDTO> quizzes = userRepository.getQuizInformationsByUserId(user.getId());
-        return new UserInformationDTO(user.getId(), user.getUsername(), quizzes);
+        return new UserInformationDTO(user.getId(), user.getUsername(),user.getEmail(), quizzes);
     }
 
 
 
     public List<IssuedQuizInfosDto> getIssuedQuizzes(CustomUserDetails principal, Integer quizId) {
         List<IssuedQuizInfosDto> issuedQuiz = issuedQuizRepository.getIssuedQuiz(principal.getId(), quizId);
+        if (Objects.isNull(issuedQuiz) || issuedQuiz.isEmpty()) {
+            return List.of();
+        }
         log.info("token: {} expire at {}, other tostring {}", issuedQuiz.getFirst().getTokenId(),issuedQuiz.getFirst().getExpiresAt(),issuedQuiz.getFirst().getTokenId().toString());
         return issuedQuiz;
     }
