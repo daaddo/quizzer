@@ -104,6 +104,12 @@ public class SecurityConfigurator {
 
                 .logoutSuccessHandler(oidcLogoutSuccessHandler())
         );
+        http.exceptionHandling(exception -> {
+            exception.authenticationEntryPoint((request, response, authException) -> {
+                log.error("Unauthorized request - {}", authException.getMessage());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            });
+        });
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

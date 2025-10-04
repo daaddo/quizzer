@@ -40,8 +40,11 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        log.info("Authentication not found, checking for token");
         String authHeader = request.getHeader("Authorization");
         String jwtToken ;
+        log.info( "Authorization header: "+authHeader);
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwtToken = authHeader.substring(7);
             String username = jwtService.extractUsername(jwtToken);

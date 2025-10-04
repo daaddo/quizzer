@@ -11,6 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -39,7 +41,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             }
             if ((username.equalsIgnoreCase(user.getUsername()) || username.equalsIgnoreCase(user.getEmail())) && user.isAccountNonLocked() && passwordEncoder.matches(password, user.getPassword())) {
                 log.info("User {} authenticated successfully", username);
-                return new UsernamePasswordAuthenticationToken(username, password, user.getAuthorities());
+                return new UsernamePasswordAuthenticationToken(user, password, user.getAuthorities());
             } else {
                 throw new BadCredentialsException("Credenziali non valide");
             }
