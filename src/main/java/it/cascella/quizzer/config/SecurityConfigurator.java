@@ -47,13 +47,16 @@ public class SecurityConfigurator {
     @Value("${logout.uri}")
     private String googleOIDClogoutUrl;
 
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+
     private final CustomOidcUserService customOidcUserService;
     private AuthenticationProvider authenticationProvider;
 
 
     @Autowired
-    public SecurityConfigurator(JwtFilter jwtFilter, CustomOidcUserService customOidcUserService, AuthenticationProvider authenticationProvider) {
+    public SecurityConfigurator(JwtFilter jwtFilter, CustomAuthenticationEntryPoint authenticationEntryPoint, CustomOidcUserService customOidcUserService, AuthenticationProvider authenticationProvider) {
         this.jwtFilter = jwtFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
         this.customOidcUserService = customOidcUserService;
         this.authenticationProvider = authenticationProvider;
     }
@@ -104,12 +107,9 @@ public class SecurityConfigurator {
 
                 .logoutSuccessHandler(oidcLogoutSuccessHandler())
         );
-        http.exceptionHandling(exception -> {
-            exception.authenticationEntryPoint((request, response, authException) -> {
-                log.error("Unauthorized request - {}", authException.getMessage());
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-            });
-        });
+        http.exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(authenticationEntryPoint)
+        );
         http.httpBasic(withDefaults());
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
         log.error("Returning validation errors: {}", errors);
         log.error("=== END VALIDATION EXCEPTION ===");
         return errors;
-    }
+    }/*
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
         log.info("=== BAD CREDENTIALS EXCEPTION CAUGHT ===");
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
         errors.put("message", "Invalid username or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errors);
 
-    }
+    }*/
     @ExceptionHandler(QuizzerException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(QuizzerException ex) {
         log.error("=== Quizzer EXCEPTION CAUGHT ===");
