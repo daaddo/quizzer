@@ -19,7 +19,7 @@ import java.util.Map;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
+@Entity(name = "user_quiz_attempt")
 public class UserQuizAttempt {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

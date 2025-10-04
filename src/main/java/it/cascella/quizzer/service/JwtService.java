@@ -76,8 +76,6 @@ public class JwtService {
 
     private SecretKey initializeKey() {
         if (configuredSecret != null && !configuredSecret.isEmpty()) {
-            log.info("Using configured JWT secret key");
-            log.info("Configured JWT secret (Base64): " + configuredSecret);
             // Se la chiave è in formato Base64, decodificala prima
             try {
                 byte[] keyBytes = Decoders.BASE64URL.decode(configuredSecret);

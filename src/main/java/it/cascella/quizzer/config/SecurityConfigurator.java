@@ -92,6 +92,7 @@ public class SecurityConfigurator {
                         .expiredUrl("/expired")
                 //pagina a cui verrà reindirizzato l'utente se la sessione è scaduta
         );
+        log.info("frontend url: {}", frontendUrl);
         http.oauth2Login(oauth -> oauth
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(customOidcUserService)

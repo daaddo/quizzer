@@ -14,7 +14,7 @@ create table if not exists users (
     password varchar(255) ,
     email varchar(100) not null unique,
     enabled boolean not null default true,
-    profile_picture_url varchar(2048),
+    profile_picture_url var char(2048),
     role enum('USER', 'ADMIN') not null default 'USER'
 );
 
@@ -90,10 +90,4 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );
 SET time_zone = '+02:00'; -- sessione
-/*
 
-SELECT a.id, a.answer, a.is_correct, q.id, title, is_multiple_choice, user_id
-FROM answer a
-         JOIN question q ON a.question_id = q.id
-WHERE q.quiz_id = 1
-ORDER BY a.question_id, a.is_correct;*/

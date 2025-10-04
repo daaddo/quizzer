@@ -14,9 +14,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+
 @Setter
 @Getter
-@Entity
+@Entity(name = "users")
 public class Users implements CustomUserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
