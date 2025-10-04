@@ -21,7 +21,7 @@ public interface UserRepository extends CrudRepository<Users, Long> {
      */
 
     @Query(
-            value = "SELECT u.* FROM Users u WHERE u.username = :usernameOrEmail OR u.email = :usernameOrEmail",
+            value = "SELECT u.* FROM users u WHERE u.username = :usernameOrEmail OR u.email = :usernameOrEmail",
             nativeQuery = true
     )
     List<Users> findByUsernameOrEmail(String usernameOrEmail);
