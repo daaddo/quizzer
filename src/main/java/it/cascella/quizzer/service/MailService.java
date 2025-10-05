@@ -70,7 +70,7 @@ public class MailService {
         }
         String token = tokenGenerator.generateToken(32);
 
-        String message = "Click on the following link to verify your email: " + URL + "/api/v1/auth/verify?token=" + token;
+        String message = "Click on the following link to verify your email: " + URL + "/verify?token=" + token;
         sendEmail(newUserDTO.email(), "Email Verification", message);
 
         NewUserDTO toSave = new NewUserDTO(
