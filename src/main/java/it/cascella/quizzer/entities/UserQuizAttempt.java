@@ -11,7 +11,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 
@@ -41,9 +41,9 @@ public class UserQuizAttempt {
     private Integer score;
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "attempted_at")
-    private Instant attemptedAt;
+    private LocalDateTime attemptedAt;
     @Column(name = "finished_at")
-    private Instant finishedAt;
+    private LocalDateTime finishedAt;
 
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)

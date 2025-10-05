@@ -15,8 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.sql.Time;
-import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 public class QuizService {
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
-    private final Cache<String, QuizInformations> cache;
     private final TokenGenerator tokenGenerator;
     private final QuestionRepository questionRepository;
     private final IssuedQuizRepository issuedQuizRepository;
@@ -36,9 +35,6 @@ public class QuizService {
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
         this.questionRepository = questionRepository;
-        this.cache = Caffeine.newBuilder()
-                .expireAfterWrite(12, TimeUnit.HOURS) // TTL 15 minuti
-                .build();
         this.issuedQuizRepository = issuedQuizRepository;
         this.userQuizAttemptRepository = userQuizAttemptRepository;
     }
@@ -89,7 +85,7 @@ public class QuizService {
 
     public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
 
-        IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value()));
+        IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.FORBIDDEN.value()));
         if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
             throw new QuizzerException("User has already requested the quiz", HttpStatus.FORBIDDEN.value());
         }
@@ -97,7 +93,11 @@ public class QuizService {
 
 
         List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());
-        QuizInfos quizInfos = issuedQuizRepository.getIssuedQuizInfosForUser(token).orElseThrow(() -> new QuizzerException("No quiz info found for token: " + token, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        Object[] objects = issuedQuizRepository.getIssuedQuizInfosForUser(token).orElseThrow(() -> new QuizzerException("No quiz info found for token: " + token, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        log.info(objects[0].toString());
+        QuizInfos quizInfos = new QuizInfos((Object[]) objects[0]);
+
+
         HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> map = new HashMap<>();
 
         map.put(quizInfos,questions.stream()
@@ -145,7 +145,7 @@ public class QuizService {
             }
         }
         byTokenAndUserId.get().setStatus(ProgressStatus.COMPLETED);
-        byTokenAndUserId.get().setFinishedAt(Instant.now());
+        byTokenAndUserId.get().setFinishedAt(LocalDateTime.now());
         byTokenAndUserId.get().setQuestions(answersByUser);
         byTokenAndUserId.get().setScore(calculateScore(answersByUser));
         userQuizAttemptRepository.save(byTokenAndUserId.get());

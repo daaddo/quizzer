@@ -1,7 +1,6 @@
 package it.cascella.quizzer.repository;
 
 import it.cascella.quizzer.dtos.IssuedQuizInfosDto;
-import it.cascella.quizzer.dtos.QuizInfos;
 import it.cascella.quizzer.entities.IssuedQuiz;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -43,7 +42,7 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
 
     @Query(
             value = """
-            SELECT iq.number_of_questions AS numberOfQuestions, iq.expires_at AS expirationDate, iq.duration AS duration
+            SELECT iq.number_of_questions , iq.expires_at , iq.duration 
             FROM issued_quiz iq
             WHERE iq.token_id = :token
             ORDER BY iq.issued_at DESC
@@ -51,7 +50,7 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
             """,
             nativeQuery = true
     )
-    Optional<QuizInfos> getIssuedQuizInfosForUser(String token);
+    Optional<Object[]> getIssuedQuizInfosForUser(String token);
 
     @Modifying
     @Transactional

@@ -143,7 +143,7 @@ public class QuizController {
      *
      * Endpoint: PUT /api/v1/quizzes/issued/expiration
      *
-     * @param request   payload contenente token ed expirationDate (ISO-8601)
+     * @param request   payload contenente token ed expiresAt (ISO-8601)
      * @param principal utente autenticato (deve essere l'issuer)
      * @throws QuizzerException se token non valido o issuer non autorizzato
      */

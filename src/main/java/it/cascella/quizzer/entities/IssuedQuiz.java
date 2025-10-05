@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
+
+import java.time.LocalDateTime;
 
 
 @Getter
@@ -31,62 +32,16 @@ public class IssuedQuiz {
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "issued_at")
-    private Instant issuedAt;
+    private LocalDateTime issuedAt;
 
     @Column(name = "expires_at")
-    private Instant expiresAt;
+    private LocalDateTime expiresAt;
 
     @Column(name = "duration")
-    private Instant duration;
+    private LocalDateTime duration;
     @NotNull
     @Column(name = "number_of_questions", nullable = false)
     private Integer numberOfQuestions;
 
-    public Users getIssuer() {
-        return issuer;
-    }
 
-    public void setIssuer(Users issuer) {
-        this.issuer = issuer;
-    }
-
-    public Quiz getQuiz() {
-        return quiz;
-    }
-
-    public void setQuiz(Quiz quiz) {
-        this.quiz = quiz;
-    }
-
-    public Instant getIssuedAt() {
-        return issuedAt;
-    }
-
-    public void setIssuedAt(Instant issuedAt) {
-        this.issuedAt = issuedAt;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public void setExpiresAt(Instant expiresAt) {
-        this.expiresAt = expiresAt;
-    }
-
-    public Instant getDuration() {
-        return duration;
-    }
-
-    public void setDuration(Instant duration) {
-        this.duration = duration;
-    }
-
-    public Integer getNumberOfQuestions() {
-        return numberOfQuestions;
-    }
-
-    public void setNumberOfQuestions(Integer numberOfQuestions) {
-        this.numberOfQuestions = numberOfQuestions;
-    }
 }

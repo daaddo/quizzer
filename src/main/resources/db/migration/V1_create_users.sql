@@ -1,6 +1,6 @@
+use quizzer
 alter table question
 add column is_multiple_choice boolean not null default false;
-
 
 
 update question q
@@ -14,7 +14,7 @@ create table if not exists users (
     password varchar(255) ,
     email varchar(100) not null unique,
     enabled boolean not null default true,
-    profile_picture_url var char(2048),
+    profile_picture_url varchar(2048),
     role enum('USER', 'ADMIN') not null default 'USER'
 );
 
@@ -89,5 +89,6 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );
-SET time_zone = '+02:00'; -- sessione
+SET time_zone = '+00:00'; -- sessione
 
+select * from issued_quiz;
