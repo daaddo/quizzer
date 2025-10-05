@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Lettura delle proprietà Spring -->
+    <springProperty name="lokiUrl" source="loki.api.url" defaultValue="http://localhost:3100/loki/api/v1/push" />
+    <springProperty name="LOKI_ENABLED" source="loki.enabled" defaultValue="false" />
+    <springProperty name="NAME" source="loki.app.name" defaultValue="app-spring" />
+    <springProperty name="CONSOLE_LOGGING_ENABLE" source="console.logging.enabled" defaultValue="true" />
+    <springProperty name="LOKI_USER" source="loki.api.username" defaultValue="" />
+    <springProperty name="LOKI_PASS" source="loki.api.password" defaultValue="" />
+
+    <!-- Appender console sempre definito -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender Loki sempre definito -->
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>https://${lokiUrl}loki/api/v1/push</url>
+        </http>
+        <format>
+            <label>
+                <pattern>app=${NAME:-alma-backend},host=${HOSTNAME:-localhost},level=%level</pattern>
+                <readMarkers>true</readMarkers>
+            </label>
+            <message>
+                <pattern>
+                    {
+                    "level":"%level",
+                    "class":"%logger{36}",
+                    "thread":"%thread",
+                    "message":"%message",
+                    "requestId":"%X{X-Request-ID}",
+                    "method":"%X{httpMethod}",
+                    "uri":"%X{requestURI}"
+                    }
+                </pattern>
+            </message>
+        </format>
+    </appender>
+
+    <!-- 1) Se LOKI abilitato -->
+    <if condition='("${LOKI_ENABLED}" == "true")'>
+        <then>
+            <!-- 1a) Se anche console abilitato -->
+            <if condition='("${CONSOLE_LOGGING_ENABLE}" == "true")'>
+                <then>
+                    <root level="INFO">
+                        <appender-ref ref="LOKI" />
+                        <appender-ref ref="CONSOLE" />
+                    </root>
+                </then>
+            </if>
+            <!-- 1b) Se console disabilitato -->
+            <if condition='("${CONSOLE_LOGGING_ENABLE}" != "true")'>
+                <then>
+                    <root level="INFO">
+                        <appender-ref ref="LOKI" />
+                    </root>
+                </then>
+            </if>
+        </then>
+    </if>
+
+    <!-- 2) Se LOKI disabilitato -->
+    <if condition='("${LOKI_ENABLED}" != "true")'>
+        <then>
+            <!-- 2a) Se console abilitato -->
+            <if condition='("${CONSOLE_LOGGING_ENABLE}" == "true")'>
+                <then>
+                    <root level="INFO">
+                        <appender-ref ref="CONSOLE" />
+                    </root>
+                </then>
+            </if>
+        </then>
+    </if>
+
+    <!-- Livello TRACE per SQL bind di Hibernate -->
+    <logger name="org.hibernate.type.descriptor.sql" level="TRACE" />
+</configuration>

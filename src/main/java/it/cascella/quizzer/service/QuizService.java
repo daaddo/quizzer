@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.sql.Time;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -74,6 +75,15 @@ public class QuizService {
         // Check if the quiz exists and belongs to the user
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
+        if (expirationDate.isBefore(LocalDateTime.now())) {
+            throw new QuizzerException("Expiration date must be in the future", HttpStatus.BAD_REQUEST.value());
+        }
+        if (duration.toLocalTime().isBefore(LocalTime.of(0,1))) {
+            throw new QuizzerException("Duration must be at least 1 minute", HttpStatus.BAD_REQUEST.value());
+        }
+        if (LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))){
+            throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
+        }
         String token = tokenGenerator.generateToken(32);
         log.info("Generated token: {}", token);
         while (issuedQuizRepository.getByTokenId(token).isPresent()){
@@ -128,6 +138,17 @@ public class QuizService {
         }
         if (byTokenAndUserId.get().getStatus().equals(ProgressStatus.COMPLETED)){
             throw new QuizzerException("User has already submitted the quiz", HttpStatus.FORBIDDEN.value());
+        }
+        // controlliamo se il tempo di consegna del quiz è nella durata del quiz se no lo settiamo a scaduto diamo 10 secondi in più per evitare problemi di latenza
+        if (byTokenAndUserId.get().getAttemptedAt().plusSeconds(quizInformations.getDuration().toLocalTime().toSecondOfDay()).plusSeconds(10).isBefore(LocalDateTime.now())){
+            byTokenAndUserId.get().setStatus(ProgressStatus.EXPIRED);
+            userQuizAttemptRepository.save(byTokenAndUserId.get());
+            throw new QuizzerException("Time is up! Quiz expired", HttpStatus.FORBIDDEN.value());
+        }
+        if (quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
+            byTokenAndUserId.get().setStatus(ProgressStatus.EXPIRED);
+            userQuizAttemptRepository.save(byTokenAndUserId.get());
+            throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
         }
 
         //prendiamo le risposte  dal db

@@ -1,4 +1,4 @@
-use quizzer
+use quizzer;
 alter table question
 add column is_multiple_choice boolean not null default false;
 
@@ -89,6 +89,3 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );
-SET time_zone = '+00:00'; -- sessione
-
-select * from issued_quiz;
