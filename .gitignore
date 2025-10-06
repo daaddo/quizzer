@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### environment files ###
+.env
+
+### docker ###
+docker-compose.override.yml
+.docker/
+docker/
+docker-compose.yml
+db
+
+backup.sql
+backups/*.sql

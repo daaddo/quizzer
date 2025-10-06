@@ -18,7 +18,7 @@
     <!-- Appender Loki sempre definito -->
     <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
         <http>
-            <url>https://${lokiUrl}loki/api/v1/push</url>
+            <url>${lokiUrl}</url>
         </http>
         <format>
             <label>
