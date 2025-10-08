@@ -133,16 +133,18 @@ public class MailService {
     public boolean initiatePasswordReset(String email) {
         Users user = userRepository.findUsersByEmail(email).orElse(null);
         if (user == null) {
-            log.warn("Password reset requested for non-existing email: {}", email);
+            log.info("Password reset requested for non-existing email : {}, no user found for this email", email);
             return false; // Email non trovata
         }
 
+        log.info("Password reset requested for email: {}, user found: {}", email, user.getUsername());
+        // Genera un token di reset della password
         String token = tokenGenerator.generateToken(32);
-        String message = "Click on the following link to reset your password: " + URL + "/api/v1/users/reset-password?token=" + token;
+        String message = "Click on the following link to reset your password: " + URL + "/reset-password?token=" + token;
         sendEmail(email, "Password Reset", message);
 
         // Salva il token di reset della password in cache con TTL di 15 minuti
-        cacheReset.put(token, new NewUserDTO(user.getUsername(), user.getEmail(), user.getPassword()));
+        cacheReset.put(token, new NewUserDTO(user.getUsername(), user.getPassword(),user.getEmail()));
         return true;
     }
 
@@ -162,6 +164,7 @@ public class MailService {
             }
         } else {
             log.warn("Invalid or expired password reset token: {}", token);
+            throw new QuizzerException("Invalid or expired token", HttpStatus.BAD_REQUEST.value());
         }
 
     }

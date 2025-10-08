@@ -43,4 +43,6 @@ docker-compose.yml
 db
 
 backup.sql
-backups/*.sql
+src/main/resources/backups
+
+src/main/resources/scripts

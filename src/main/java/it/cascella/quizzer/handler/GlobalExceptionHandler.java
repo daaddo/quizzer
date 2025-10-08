@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -51,7 +52,7 @@ public class GlobalExceptionHandler {
         log.error("Returning validation errors: {}", errors);
         log.error("=== END VALIDATION EXCEPTION ===");
         return errors;
-    }/*
+    }
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
         log.info("=== BAD CREDENTIALS EXCEPTION CAUGHT ===");
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
         errors.put("message", "Invalid username or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errors);
 
-    }*/
+    }
     @ExceptionHandler(QuizzerException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(QuizzerException ex) {
         log.error("=== Quizzer EXCEPTION CAUGHT ===");
@@ -134,6 +135,16 @@ public class GlobalExceptionHandler {
         log.error("Returning type mismatch errors: {}", errors);
         log.error("=== END METHOD ARGUMENT TYPE MISMATCH EXCEPTION ===");
         return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<Map<String, String>> handleMethodTransactionSystemException(TransactionSystemException ex) throws Throwable {
+        log.info("=== TransactionSystemException CAUGHT ===");
+        if (ex.getOriginalException() instanceof QuizzerException exception){
+            return handleValidationExceptions(exception);
+        }
+
+        return handleGenericException(ex);
     }
 
     // Add a catch-all exception handler to capture any unexpected exceptions

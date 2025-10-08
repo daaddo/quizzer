@@ -72,9 +72,8 @@ public class SecurityConfigurator {
                 .requestMatchers("/api/v1/users/status").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
-                .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm").permitAll()
+                .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm","/api/v1/users/forgot-password","/api/v1/users/set/reset-password/**").permitAll()
                 .requestMatchers("/api/v1/**","/logout").authenticated()
-                .requestMatchers("/").permitAll()
         );
         http.authenticationProvider(authenticationProvider);
         http.formLogin(form -> form.disable());

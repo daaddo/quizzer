@@ -75,13 +75,13 @@ public class QuizService {
         // Check if the quiz exists and belongs to the user
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
-        if (expirationDate.isBefore(LocalDateTime.now())) {
+        if (expirationDate!=null && expirationDate.isBefore(LocalDateTime.now())) {
             throw new QuizzerException("Expiration date must be in the future", HttpStatus.BAD_REQUEST.value());
         }
         if (duration.toLocalTime().isBefore(LocalTime.of(0,1))) {
             throw new QuizzerException("Duration must be at least 1 minute", HttpStatus.BAD_REQUEST.value());
         }
-        if (LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))){
+        if (expirationDate != null &&LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))){
             throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
         }
         String token = tokenGenerator.generateToken(32);
@@ -126,6 +126,8 @@ public class QuizService {
 
 
 
+    @Transactional
+    @Modifying
     public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer,AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException {
         //todo add protection to check if question_id belongs to the quiz
 
@@ -145,7 +147,7 @@ public class QuizService {
             userQuizAttemptRepository.save(byTokenAndUserId.get());
             throw new QuizzerException("Time is up! Quiz expired", HttpStatus.FORBIDDEN.value());
         }
-        if (quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
+        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
             byTokenAndUserId.get().setStatus(ProgressStatus.EXPIRED);
             userQuizAttemptRepository.save(byTokenAndUserId.get());
             throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
