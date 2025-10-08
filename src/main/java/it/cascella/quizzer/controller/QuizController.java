@@ -29,7 +29,7 @@ public class QuizController {
 
     @DeleteMapping("/{id}")
     public void deleteQuiz(@PathVariable Integer id,  @AuthenticationPrincipal CustomUserDetails principal) {
-        log.info("Deleting quiz with id " + id + " for user " + principal.getUsername());
+        log.info("Deleting quiz with id {}for user {}" ,id, principal.getUsername());
         quizService.deleteQuiz(id,principal.getId());
     }
 
@@ -49,12 +49,19 @@ public class QuizController {
             Integer quizId,
             Integer numberOfQuestions,
             Time duration,
-            LocalDateTime expirationDate
+            LocalDateTime expirationDate,
+            Boolean requiredDetails
     ) {}
     @PostMapping("/link")
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
-        String token= quizService.generateLink(params.quizId, params.numberOfQuestions(), params.duration,params.expirationDate, principal);
+        String token= quizService.generateLink(
+                params.quizId,
+                params.numberOfQuestions(),
+                params.duration,
+                params.expirationDate,
+                params.requiredDetails,
+                principal);
         return ResponseEntity.ok(token);
     }
 
@@ -62,10 +69,14 @@ public class QuizController {
 
 
     @GetMapping("/random")
-    public ResponseEntity<HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>>> getRandomSetOfQuestions(@RequestParam String token, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>>> getRandomSetOfQuestions
+            (@RequestParam String token,
+             @AuthenticationPrincipal CustomUserDetails principal,
+             @RequestBody(required = false) AdditionalInfoDTO additionalInfoDTO
+    ) throws QuizzerException {
         log.info("Fetching a random set of questions from token: {}", token);
         log.info("Fetching for {}", principal);
-        return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal));
+        return ResponseEntity.ok(quizService.getQuestionFromToken(token,principal, additionalInfoDTO));
     }
 
 
@@ -88,9 +99,7 @@ public class QuizController {
     /**
      * Dato un token e un JSON con mappa questionId -> AnswerResponse, valida issuer
      * e restituisce la lista delle domande complete per gli id forniti.
-     *
      * Endpoint: Post /api/v1/quizzes/questions-by-token
-     *
      * Esempio payload:
      * {
      *   "token": "...",

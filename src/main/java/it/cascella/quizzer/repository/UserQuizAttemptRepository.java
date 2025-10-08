@@ -16,12 +16,12 @@ public interface UserQuizAttemptRepository extends CrudRepository<UserQuizAttemp
     @Transactional
     @Query(
             value = """
-            INSERT INTO user_quiz_attempt (user_id, token, attempted_at, status)
-            VALUES (:userId, :tokenId, NOW(), 'IN_PROGRESS')
+            INSERT INTO user_quiz_attempt (user_id, token, attempted_at, status, user_name, surname, middle_name)
+            VALUES (:userId, :tokenId, NOW(), 'IN_PROGRESS',:username, :surname, :middleName);
             """,
             nativeQuery = true
     )
-    Integer insertIssuedQuiz(Integer userId,String tokenId);
+    Integer insertIssuedQuiz(Integer userId,String tokenId, String username, String surname, String middleName);
 
     @Modifying
     @Transactional

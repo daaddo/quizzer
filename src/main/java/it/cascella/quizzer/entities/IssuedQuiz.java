@@ -43,5 +43,10 @@ public class IssuedQuiz {
     @Column(name = "number_of_questions", nullable = false)
     private Integer numberOfQuestions;
 
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "required_details", nullable = false)
+    private Boolean requiredDetails;
+
 
 }

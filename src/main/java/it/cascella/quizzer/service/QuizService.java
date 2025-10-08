@@ -71,7 +71,14 @@ public class QuizService {
         }
     }
 
-    public String generateLink(Integer quizId, Integer numbOfQuestions, Time duration, LocalDateTime expirationDate, CustomUserDetails details) throws QuizzerException {
+    public String generateLink(
+            Integer quizId,
+            Integer numbOfQuestions,
+            Time duration,
+            LocalDateTime expirationDate,
+            Boolean isAdditionalInfos,
+            CustomUserDetails details
+    ) throws QuizzerException {
         // Check if the quiz exists and belongs to the user
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
@@ -89,17 +96,38 @@ public class QuizService {
         while (issuedQuizRepository.getByTokenId(token).isPresent()){
             token = tokenGenerator.generateToken(32);
         }
-        issuedQuizRepository.insertIssuedQuiz(token,details.getId(),quizId,expirationDate,duration,numbOfQuestions);
+        issuedQuizRepository.insertIssuedQuiz(
+                token,
+                details.getId(),
+                quizId,
+                expirationDate,
+                duration,
+                numbOfQuestions,
+                isAdditionalInfos
+        );
         return String.format(token);
     }
 
-    public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal) throws QuizzerException {
+    public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal,AdditionalInfoDTO additionalInfoDTO) throws QuizzerException {
 
         IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.FORBIDDEN.value()));
         if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
             throw new QuizzerException("User has already requested the quiz", HttpStatus.FORBIDDEN.value());
         }
-        userQuizAttemptRepository.insertIssuedQuiz(principal.getId(), token);
+
+        // check if the quiz requires additional information and if the user hasn't provided it
+        if(issuedQuizRepository.isAdditionalInformationRequired(token) &&(
+                ((additionalInfoDTO.surname().isBlank() && additionalInfoDTO.surname().isEmpty())
+                        || (additionalInfoDTO.user_name().isBlank() && additionalInfoDTO.user_name().isEmpty())
+                ))){
+            throw new QuizzerException("Additional information required", HttpStatus.BAD_REQUEST.value());
+        }
+        userQuizAttemptRepository.insertIssuedQuiz(
+                principal.getId(),
+                token,additionalInfoDTO.user_name(),
+                additionalInfoDTO.surname(),
+                additionalInfoDTO.middleName().isBlank() ? null : additionalInfoDTO.middleName()
+        );
 
 
         List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());

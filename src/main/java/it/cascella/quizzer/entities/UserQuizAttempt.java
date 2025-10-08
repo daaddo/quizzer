@@ -3,6 +3,7 @@ package it.cascella.quizzer.entities;
 import it.cascella.quizzer.dtos.AnswerResponse;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +55,21 @@ public class UserQuizAttempt {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ProgressStatus status;
+
+
+    @Size(max = 40)
+    @Column(name = "user_name", length = 40)
+    private String userName;
+
+
+    @Size(max = 40)
+    @Column(name = "middle_name", length = 40)
+    private String middleName;
+
+
+    @Size(max = 40)
+    @Column(name = "surname", length = 40)
+    private String surname;
 
 
 }

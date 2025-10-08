@@ -28,6 +28,7 @@ public class IssuedQuizInfosDto {
     private Timestamp issuedAt;
     private Timestamp expiresAt;
     private Time duration;
+    private Boolean required_details;
 
 
     public IssuedQuizInfosDto(byte[] tokenId, Integer issuerId, Integer quizId, Integer numberOfQuestions, Timestamp issuedAt, Timestamp expiresAt, Time duration) {

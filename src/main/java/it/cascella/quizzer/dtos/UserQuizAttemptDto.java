@@ -21,8 +21,10 @@ public record UserQuizAttemptDto(
         Timestamp finishedAt,
         String status,
         String questions,
-        String username
-) {
+        String user_name,
+        String surname,
+        String middle_name,
+        String userName) {
     @JsonProperty("token")
     public String getTokenIdAsBase64() {
         String token = new String(this.token, StandardCharsets.UTF_8);

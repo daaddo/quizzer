@@ -19,12 +19,12 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
     @Transactional
     @Query(
             value = """
-            INSERT INTO issued_quiz (token_id, issuer_id, quiz_id, issued_at, expires_at, duration,number_of_questions)
-            VALUES (:tokenId, :issuerId, :quizId, NOW(), :expire, :duration, :numberOfQuestions)
+            INSERT INTO issued_quiz (token_id, issuer_id, quiz_id, issued_at, expires_at, duration,number_of_questions, required_details)
+            VALUES (:tokenId, :issuerId, :quizId, NOW(), :expire, :duration, :numberOfQuestions, :requiredDetails);
             """,
             nativeQuery = true
     )
-    Integer insertIssuedQuiz(String tokenId, Integer issuerId, Integer quizId, LocalDateTime expire, Time duration, Integer numberOfQuestions);
+    Integer insertIssuedQuiz(String tokenId, Integer issuerId, Integer quizId, LocalDateTime expire, Time duration, Integer numberOfQuestions, Boolean requiredDetails);
 
     Optional<IssuedQuiz> getByTokenId(String tokenId);
 
@@ -42,7 +42,7 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
 
     @Query(
             value = """
-            SELECT iq.number_of_questions , iq.expires_at , iq.duration 
+            SELECT iq.number_of_questions , iq.expires_at , iq.duration, iq.required_details 
             FROM issued_quiz iq
             WHERE iq.token_id = :token
             ORDER BY iq.issued_at DESC
@@ -86,4 +86,14 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
             nativeQuery = true
     )
     int deleteByToken(String token);
+
+    @Query(
+            value = """
+            SELECT iq.required_details
+            FROM issued_quiz iq
+            WHERE iq.token_id = :tokenId
+            """,
+            nativeQuery = true
+    )
+    boolean isAdditionalInformationRequired(String tokenId);
 }
