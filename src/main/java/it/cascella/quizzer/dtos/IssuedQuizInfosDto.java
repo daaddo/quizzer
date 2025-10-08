@@ -31,7 +31,7 @@ public class IssuedQuizInfosDto {
     private Boolean required_details;
 
 
-    public IssuedQuizInfosDto(byte[] tokenId, Integer issuerId, Integer quizId, Integer numberOfQuestions, Timestamp issuedAt, Timestamp expiresAt, Time duration) {
+    public IssuedQuizInfosDto(byte[] tokenId, Integer issuerId, Integer quizId, Integer numberOfQuestions, Timestamp issuedAt, Timestamp expiresAt, Time duration,Boolean required_details) {
         this.tokenId = tokenId;
         this.issuerId = issuerId;
         this.quizId = quizId;
@@ -39,6 +39,7 @@ public class IssuedQuizInfosDto {
         this.issuedAt = issuedAt;
         this.expiresAt = expiresAt;
         this.duration = duration;
+        this.required_details = required_details;
     }
 
     @JsonProperty("tokenId")

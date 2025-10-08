@@ -114,20 +114,39 @@ public class QuizService {
         if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
             throw new QuizzerException("User has already requested the quiz", HttpStatus.FORBIDDEN.value());
         }
-
+        // check if the quiz has expired
+        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
+            throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
+        }
         // check if the quiz requires additional information and if the user hasn't provided it
-        if(issuedQuizRepository.isAdditionalInformationRequired(token) &&(
-                ((additionalInfoDTO.surname().isBlank() && additionalInfoDTO.surname().isEmpty())
-                        || (additionalInfoDTO.user_name().isBlank() && additionalInfoDTO.user_name().isEmpty())
-                ))){
+
+        if(quizInformations.getRequiredDetails() &&(
+                (
+                        additionalInfoDTO == null ||
+                                (additionalInfoDTO.surname()== null || additionalInfoDTO.surname().isBlank()) ||
+                                (additionalInfoDTO.user_name()==null || additionalInfoDTO.user_name().isBlank())
+                )
+        )){
             throw new QuizzerException("Additional information required", HttpStatus.BAD_REQUEST.value());
         }
-        userQuizAttemptRepository.insertIssuedQuiz(
-                principal.getId(),
-                token,additionalInfoDTO.user_name(),
-                additionalInfoDTO.surname(),
-                additionalInfoDTO.middleName().isBlank() ? null : additionalInfoDTO.middleName()
-        );
+        if (additionalInfoDTO != null) {
+            userQuizAttemptRepository.insertIssuedQuiz(
+                    principal.getId(),
+                    token,
+                    additionalInfoDTO.user_name() == null ? null : additionalInfoDTO.user_name(),
+                    additionalInfoDTO.surname()== null? null : additionalInfoDTO.surname(),
+                    additionalInfoDTO.middleName()== null ? null : additionalInfoDTO.middleName()
+            );
+        }
+        else{
+            userQuizAttemptRepository.insertIssuedQuiz(
+                    principal.getId(),
+                    token,
+                    null,
+                    null,
+                    null
+            );
+        }
 
 
         List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());
@@ -240,6 +259,9 @@ public class QuizService {
         if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
             throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
         }
+        if (expiration != null && expiration.isBefore(LocalDateTime.now().plusMinutes(1))) {
+            throw new QuizzerException("Expiration date must be in the future", HttpStatus.BAD_REQUEST.value());
+        }
         int affected = issuedQuizRepository.updateExpiration(token, expiration);
         if (affected == 0) {
             throw new QuizzerException("Issued quiz not found", HttpStatus.NOT_FOUND.value());
@@ -303,5 +325,9 @@ public class QuizService {
                         .map(a -> new GetAnswerDto(a.getId(), a.getAnswer(), a.getCorrect()))
                         .toList()
         )).toList();
+    }
+
+    public Boolean doesRequireDetails(String token) throws QuizzerException {
+        return issuedQuizRepository.isAdditionalInformationRequired(token).orElseThrow(()-> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
     }
 }

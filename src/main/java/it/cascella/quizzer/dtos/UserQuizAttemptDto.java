@@ -1,12 +1,7 @@
 package it.cascella.quizzer.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.cascella.quizzer.entities.ProgressStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -22,8 +17,9 @@ public record UserQuizAttemptDto(
         String status,
         String questions,
         String user_name,
-        String surname,
         String middle_name,
+        String surname,
+
         String userName) {
     @JsonProperty("token")
     public String getTokenIdAsBase64() {

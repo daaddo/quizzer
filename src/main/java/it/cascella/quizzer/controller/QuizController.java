@@ -45,6 +45,13 @@ public class QuizController {
         quizService.updateQuiz(newQuiz,principal.getId());
     }
 
+
+    @GetMapping("/doesRequireDetails")
+    public ResponseEntity<Boolean> doesRequireDetails(@RequestParam String token)
+throws QuizzerException {
+        log.info("Checking if quiz requires details for token: {}", token);
+        return ResponseEntity.ok(quizService.doesRequireDetails(token));
+    }
     record  LinkRequest(
             Integer quizId,
             Integer numberOfQuestions,
@@ -68,7 +75,7 @@ public class QuizController {
 
 
 
-    @GetMapping("/random")
+    @PostMapping("/random")
     public ResponseEntity<HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>>> getRandomSetOfQuestions
             (@RequestParam String token,
              @AuthenticationPrincipal CustomUserDetails principal,

@@ -70,18 +70,19 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(QuizzerException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(QuizzerException ex) {
-        log.error("=== Quizzer EXCEPTION CAUGHT ===");
-        log.error("Quizzer code: {}", ex.getCode());
-        log.error("Quizzer message: {}", ex.getMessage());
-        log.error("Quizzer cause: {}", ex.getCause() != null ? ex.getCause().getMessage() : "No cause");
-        log.error("Full stack trace: ", ex);
+        log.info("=== Quizzer EXCEPTION CAUGHT ===");
+        log.info("Quizzer code: {}", ex.getCode());
+        log.info("Quizzer message: {}", ex.getMessage());
+        log.info("Quizzer cause: {}", ex.getCause() != null ? ex.getCause().getMessage() : "No cause");
+        log.info("Full stack trace: ", ex);
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String timestamp = now.format(formatter);
         Map<String, String> errors = new HashMap<>();
         if (!(ex.getCode() >= 500)){
-            errors.put("error", ex.getMessage());
+            log.error("INTERNAL SERVER ERROR, not exposing message FULL STACK TRACE {}", String.valueOf(ex));
+
         }
         errors.put("status", String.valueOf(ex.getCode()));
         errors.put("timestamp", timestamp);
