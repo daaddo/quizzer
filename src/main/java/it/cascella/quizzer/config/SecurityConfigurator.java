@@ -23,6 +23,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -63,15 +64,23 @@ public class SecurityConfigurator {
 
     @Bean
     SecurityFilterChain SecurityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(cc -> cc.disable());
+        CookieCsrfTokenRepository csrfToken =CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfToken.setCookieCustomizer(
+                cookie -> {
+                    cookie.sameSite("Lax");
+                }
+        );
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
+        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/v1/csrf").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/users/status").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
+                .requestMatchers("/api/v1/users/private","/api/v1/users/privatepost").authenticated()
                 .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm","/api/v1/users/forgot-password","/api/v1/users/set/reset-password/**").permitAll()
                 .requestMatchers("/api/v1/**","/logout").authenticated()
         );
@@ -154,6 +163,7 @@ public class SecurityConfigurator {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
+                "X-CSRF-TOKEN",
                 "X-XSRF-TOKEN",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",
@@ -170,6 +180,7 @@ public class SecurityConfigurator {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
+                "X-CSRF-TOKEN",
                 "X-XSRF-TOKEN",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",
