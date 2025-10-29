@@ -16,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
@@ -71,7 +72,7 @@ public class SecurityConfigurator {
                 }
         );
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
-        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
+        //http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
@@ -163,8 +164,6 @@ public class SecurityConfigurator {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
-                "X-CSRF-TOKEN",
-                "X-XSRF-TOKEN",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",
                 "Access-Control-Allow-Methods",
@@ -180,8 +179,6 @@ public class SecurityConfigurator {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
-                "X-CSRF-TOKEN",
-                "X-XSRF-TOKEN",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",
                 "Access-Control-Allow-Methods",

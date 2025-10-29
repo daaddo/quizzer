@@ -51,6 +51,7 @@ public class UserController {
     public ResponseEntity<UserInformationDTO> getUserInformation(@AuthenticationPrincipal CustomUserDetails principal) {
         // Assuming you have a service to fetch user information
         UserInformationDTO userInfo = userService.getUserInformation(principal);
+        log.info("returning user info for user: {} infos: {}", principal.getUsername(),userInfo);
         return ResponseEntity.ok(userInfo);
     }
 
