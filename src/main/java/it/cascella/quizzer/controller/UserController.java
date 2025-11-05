@@ -1,13 +1,11 @@
 package it.cascella.quizzer.controller;
 
 
-import it.cascella.quizzer.dtos.IssuedQuizInfosDto;
-import it.cascella.quizzer.dtos.NewUserDTO;
-import it.cascella.quizzer.dtos.UserInformationDTO;
-import it.cascella.quizzer.dtos.UserQuizAttemptDto;
+import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.MailService;
+import it.cascella.quizzer.service.SendMailGrpcClientService;
 import it.cascella.quizzer.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,11 +38,13 @@ public class UserController {
             0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(50) // coda max 50 richieste in attesa
     );
+    private final SendMailGrpcClientService sendMailGrpcClientService;
 
     @Autowired
-    public UserController(UserService userService, MailService mailService) {
+    public UserController(UserService userService, MailService mailService, SendMailGrpcClientService sendMailGrpcClientService) {
         this.userService = userService;
         this.mailService = mailService;
+        this.sendMailGrpcClientService = sendMailGrpcClientService;
     }
 
     @GetMapping
@@ -59,17 +59,25 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody NewUserDTO newUserDTO) throws QuizzerException {
         log.info("Registering new user with username: {}", newUserDTO.username());
-        mailService.registerUser(newUserDTO);
+        String token = userService.registerUser(newUserDTO);
+        Mail mail = new Mail(
+                newUserDTO.email(),
+                "Confirm your registration",
+                "Please confirm your registration by clicking the following link: "
+                        + userService.getURL() + "/api/v1/users/confirm?token=" + token
+        );
+        mailService.sendEmail(mail);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     @PostMapping("/confirm")
     public ResponseEntity<String> confirmUser(@RequestParam("token") String token) {
+
         try {
             Future<ResponseEntity<String>> submit = executorService.submit(() -> {
                 log.info("Confirming user with token: {}", token);
-                boolean isConfirmed = mailService.confirmUser(token);
-                if (isConfirmed) {
+                boolean confirmed = userService.confirmUser(token);
+                if (confirmed) {
                     return ResponseEntity.ok("User confirmed successfully");
                 } else {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
@@ -88,9 +96,21 @@ public class UserController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@RequestParam("email") String email) {
+    public ResponseEntity<Void> forgotPassword(@RequestParam("email") String email) throws QuizzerException {
         log.info("Password reset requested for email: {}", email);
-        mailService.initiatePasswordReset(email);
+        String token = userService.initiatePasswordReset(email);
+        Mail mail = new Mail(
+                email,
+                "Password reset",
+                "Click on the following link to reset your password: " + userService.getURL() + "/reset-password?token=" + token);
+        sendMailGrpcClientService.getNewFutureStub().sendMail(
+                it.cascella.sendmail.proto.MailRequest.newBuilder()
+                        .setTo(mail.getTo())
+                        .setSubject(mail.getSubject())
+                        .setBody(mail.getBody())
+                        .build()
+        );
+        mailService.sendEmail(mail);
         return ResponseEntity.ok().build();
     }
 
@@ -102,7 +122,7 @@ public class UserController {
     @PostMapping("/set/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) throws QuizzerException {
         log.info("Resetting password with token: {}", request.token());
-        mailService.resetPassword(request.token(), request.newPassword());
+        userService.resetPassword(request.token(), request.newPassword());
         return ResponseEntity.ok("Password reset successfully");
 
     }

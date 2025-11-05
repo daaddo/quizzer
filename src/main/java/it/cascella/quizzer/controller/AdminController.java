@@ -1,6 +1,6 @@
 package it.cascella.quizzer.controller;
 
-import it.cascella.quizzer.service.MailService;
+import it.cascella.quizzer.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,17 +13,16 @@ import java.util.HashMap;
 @RequestMapping("/api/v1/admin")
 public class AdminController {
 
-    private final MailService mailService;
+    private final UserService userService;
 
     @Autowired
-    public AdminController(MailService mailService) {
-        this.mailService = mailService;
-
+    public AdminController(UserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping("/cache")
     public ResponseEntity<HashMap<String,Object>> getCache() {
-        return ResponseEntity.ok(mailService.getCacheStats());
+        return ResponseEntity.ok(userService.getCacheStats());
     }
 
     //todo endpoint per backup db

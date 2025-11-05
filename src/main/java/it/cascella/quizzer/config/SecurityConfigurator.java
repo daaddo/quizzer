@@ -72,7 +72,7 @@ public class SecurityConfigurator {
                 }
         );
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
-        //http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
+        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
