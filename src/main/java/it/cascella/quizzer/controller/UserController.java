@@ -66,7 +66,11 @@ public class UserController {
                 "Please confirm your registration by clicking the following link: "
                         + userService.getURL() + "/api/v1/users/confirm?token=" + token
         );
-        mailService.sendEmail(mail);
+        sendMailGrpcClientService.getNewFutureStub().sendMail(it.cascella.sendmail.proto.MailRequest.newBuilder()
+                        .setTo(mail.getTo())
+                        .setSubject(mail.getSubject())
+                        .setBody(mail.getBody())
+                .build());
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
@@ -101,7 +105,7 @@ public class UserController {
         String token = userService.initiatePasswordReset(email);
         Mail mail = new Mail(
                 email,
-                "Password reset",
+                "Password reset request",
                 "Click on the following link to reset your password: " + userService.getURL() + "/reset-password?token=" + token);
         sendMailGrpcClientService.getNewFutureStub().sendMail(
                 it.cascella.sendmail.proto.MailRequest.newBuilder()
@@ -110,7 +114,6 @@ public class UserController {
                         .setBody(mail.getBody())
                         .build()
         );
-        mailService.sendEmail(mail);
         return ResponseEntity.ok().build();
     }
 

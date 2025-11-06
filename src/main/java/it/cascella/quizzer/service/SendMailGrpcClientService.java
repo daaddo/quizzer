@@ -9,15 +9,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class SendMailGrpcClientService {
     private final ManagedChannel channel;
-    @Value("{microservice.service.email.port}")
-    Integer emailPort;
-    @Value("{microservice.service.email.domain}")
-    String emailDomain;
+    private Integer emailPort;
+    private  String emailDomain;
 
 
-    public SendMailGrpcClientService() {
+    public SendMailGrpcClientService(@Value("${microservice.service.email.port}") Integer emailPort,
+                                     @Value("${microservice.service.email.domain}") String emailDomain) {
+        this.emailPort = emailPort;
+        this.emailDomain = emailDomain;
         this.channel = ManagedChannelBuilder
-                .forAddress(emailDomain, emailPort)
+                .forAddress(this.emailDomain, this.emailPort)
                 .usePlaintext()
                 .build();
     }

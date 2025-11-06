@@ -72,17 +72,27 @@ public class SecurityConfigurator {
                 }
         );
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
-        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken));
+        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken).ignoringRequestMatchers(
+                "/error",
+                "/v1/csrf",
+                "/api/v1/users/register",
+                "/api/v1/users/confirm",
+                "/api/v1/users/forgot-password",
+                "/api/v1/users/set/reset-password/**",
+                "/api/v1/users/status",
+                "/actuator/**",
+                "/api/v1/jwt/user/**"
+        ));
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/v1/csrf").permitAll()
+                .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm","/api/v1/users/forgot-password","/api/v1/users/set/reset-password/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/users/status").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
                 .requestMatchers("/api/v1/users/private","/api/v1/users/privatepost").authenticated()
-                .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm","/api/v1/users/forgot-password","/api/v1/users/set/reset-password/**").permitAll()
                 .requestMatchers("/api/v1/**","/logout").authenticated()
         );
         http.authenticationProvider(authenticationProvider);
