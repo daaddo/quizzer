@@ -86,7 +86,7 @@ public class SecurityConfigurator {
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/v1/csrf").permitAll()
+                .requestMatchers("api/v1/csrf").permitAll()
                 .requestMatchers("/api/v1/users/register", "/api/v1/users/confirm","/api/v1/users/forgot-password","/api/v1/users/set/reset-password/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/users/status").permitAll()
@@ -107,7 +107,7 @@ public class SecurityConfigurator {
         );
 
         http.sessionManagement(sessionManagement -> sessionManagement
-                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) //NON VOGLIAMO SESSIONI PERSISTENTI MA OGNI RICHIESTA DEVE ESSERE AUTENTICATA
+                         //NON VOGLIAMO SESSIONI PERSISTENTI MA OGNI RICHIESTA DEVE ESSERE AUTENTICATA
                         .sessionFixation().newSession()
                         .invalidSessionUrl("/timeout")
                         .maximumSessions(3) //numero massimo di sessioni per utente
@@ -173,6 +173,7 @@ public class SecurityConfigurator {
                 "Authorization",
                 "Content-Type",
                 "X-Requested-With",
+                "X-XSRF-TOKEN",
                 "Accept",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",
@@ -188,6 +189,7 @@ public class SecurityConfigurator {
                 "Authorization",
                 "Content-Type",
                 "X-Requested-With",
+                "X-XSRF-TOKEN",
                 "Accept",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Headers",

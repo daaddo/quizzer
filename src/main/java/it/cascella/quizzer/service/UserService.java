@@ -149,11 +149,11 @@ public class UserService implements UserDetailsService {
 
     }
 
-    public String initiatePasswordReset(String email) {
+    public String initiatePasswordReset(String email) throws QuizzerException {
         Users user = userRepository.findUsersByEmail(email).orElse(null);
         if (user == null) {
             log.info("Password reset requested for non-existing email : {}, no user found for this email", email);
-
+            throw new QuizzerException("If the email exists, a password reset link has been sent", HttpStatus.OK.value());
         }
 
         log.info("Password reset requested for email: {}, user found: {}", email, user.getUsername());
