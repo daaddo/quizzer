@@ -1,6 +1,7 @@
 package it.cascella.quizzer.config;
 
 
+import it.cascella.quizzer.filters.CsrfCookieFilter;
 import it.cascella.quizzer.filters.JwtFilter;
 import it.cascella.quizzer.service.CustomOidcUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +25,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -45,6 +49,9 @@ public class SecurityConfigurator {
 
     @Value("${frontend.url}")
     private String frontendUrl;
+
+    @Value("${spring.csrf.secure}")
+    private boolean csrfSecure;
 
     @Value("${logout.uri}")
     private String googleOIDClogoutUrl;
@@ -69,20 +76,19 @@ public class SecurityConfigurator {
         csrfToken.setCookieCustomizer(
                 cookie -> {
                     cookie.sameSite("Lax");
+                    cookie.secure(csrfSecure);
                 }
         );
+        CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
-        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken).ignoringRequestMatchers(
-                "/error",
-                "/v1/csrf",
-                "/api/v1/users/register",
-                "/api/v1/users/confirm",
-                "/api/v1/users/forgot-password",
-                "/api/v1/users/set/reset-password/**",
-                "/api/v1/users/status",
-                "/actuator/**",
+        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken)
+                        .csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
+                        .ignoringRequestMatchers(
+
                 "/api/v1/jwt/user/**"
-        ));
+        )
+
+        ).addFilterAfter(new CsrfCookieFilter(),  BasicAuthenticationFilter.class);
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
