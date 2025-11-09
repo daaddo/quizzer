@@ -110,6 +110,17 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     void saveQuestion(Integer integer, String principal);
 
 
+    @Query(
+            value = """
+            SELECT CASE WHEN COUNT(q.id) = :#{#requiredQuestions.size()} THEN TRUE ELSE FALSE END
+            FROM question q
+            WHERE q.quiz_id = :quizId AND q.id IN :#{#requiredQuestions}
+            """,
+            nativeQuery = true
+    )
+    boolean assertQuestionsExistsInQuiz(List<Integer> requiredQuestions, Integer quizId);
+
+
     record CorrectionAnswer(
             Integer answerId,
             String answer,

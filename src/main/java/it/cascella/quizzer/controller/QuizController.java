@@ -57,7 +57,8 @@ throws QuizzerException {
             Integer numberOfQuestions,
             Time duration,
             LocalDateTime expirationDate,
-            Boolean requiredDetails
+            Boolean requiredDetails,
+            List<Integer> requiredQuestions
     ) {}
     @PostMapping("/link")
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
@@ -68,6 +69,7 @@ throws QuizzerException {
                 params.duration,
                 params.expirationDate,
                 params.requiredDetails,
+                params.requiredQuestions,
                 principal);
         return ResponseEntity.ok(token);
     }

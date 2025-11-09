@@ -10,10 +10,13 @@ import it.cascella.quizzer.exceptions.QuizzerException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -30,14 +33,18 @@ public class QuizService {
     private final QuestionRepository questionRepository;
     private final IssuedQuizRepository issuedQuizRepository;
     private final UserQuizAttemptRepository userQuizAttemptRepository;
+    private final NecessaryQuestionRepository necessaryQuestionRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository, NecessaryQuestionRepository necessaryQuestionRepository, JdbcTemplate jdbcTemplate) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
         this.questionRepository = questionRepository;
         this.issuedQuizRepository = issuedQuizRepository;
         this.userQuizAttemptRepository = userQuizAttemptRepository;
+        this.necessaryQuestionRepository = necessaryQuestionRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional
@@ -71,12 +78,17 @@ public class QuizService {
         }
     }
 
+
+
+    @Transactional
+    @Modifying
     public String generateLink(
             Integer quizId,
             Integer numbOfQuestions,
             Time duration,
             LocalDateTime expirationDate,
             Boolean isAdditionalInfos,
+            List<Integer> requiredQuestions,
             CustomUserDetails details
     ) throws QuizzerException {
         // Check if the quiz exists and belongs to the user
@@ -85,11 +97,17 @@ public class QuizService {
         if (expirationDate!=null && expirationDate.isBefore(LocalDateTime.now())) {
             throw new QuizzerException("Expiration date must be in the future", HttpStatus.BAD_REQUEST.value());
         }
+
         if (duration.toLocalTime().isBefore(LocalTime.of(0,1))) {
             throw new QuizzerException("Duration must be at least 1 minute", HttpStatus.BAD_REQUEST.value());
         }
+
         if (expirationDate != null &&LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))){
             throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
+        }
+
+        if(!questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId) ){
+            throw new QuizzerException("Some required questions do not belong to the quiz", HttpStatus.BAD_REQUEST.value());
         }
         String token = tokenGenerator.generateToken(32);
         log.info("Generated token: {}", token);
@@ -105,6 +123,24 @@ public class QuizService {
                 numbOfQuestions,
                 isAdditionalInfos
         );
+        IssuedQuiz quiz = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Error generating token", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+
+
+        String sql = "INSERT INTO necessary_questions (id, issued_quiz_token) VALUES (?, ?)";
+        try {
+            String finalToken = token;
+            jdbcTemplate.batchUpdate(sql, requiredQuestions, 100, (ps, questionId) -> {
+                ps.setInt(1, questionId);
+                ps.setBytes(2, finalToken.getBytes(StandardCharsets.UTF_8));
+            });
+        } catch (DataAccessException e) {
+            log.error("Errore durante l'inserimento batch delle necessary_questions", e);
+            throw new QuizzerException("Error inserting necessary questions", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        }
+
+
+
+
         return String.format(token);
     }
 

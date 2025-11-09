@@ -1,0 +1,19 @@
+package it.cascella.quizzer.entities;
+
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class NecessaryQuestionId implements Serializable {
+    private Integer id;
+
+    private byte[] issuedQuizToken;
+
+}
