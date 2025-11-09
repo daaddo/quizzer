@@ -91,6 +91,9 @@ public class QuizService {
             List<Integer> requiredQuestions,
             CustomUserDetails details
     ) throws QuizzerException {
+        if ( requiredQuestions != null && requiredQuestions.size() > numbOfQuestions ) {
+            throw new QuizzerException("Number of required questions cannot be greater than total number of questions", HttpStatus.BAD_REQUEST.value());
+        }
         // Check if the quiz exists and belongs to the user
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
@@ -106,7 +109,7 @@ public class QuizService {
             throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
         }
 
-        boolean isRequiredQuestionsNotEmpty = requiredQuestions != null && requiredQuestions.isEmpty();
+        boolean isRequiredQuestionsNotEmpty =requiredQuestions != null&&! requiredQuestions.isEmpty();
         if(isRequiredQuestionsNotEmpty&&!(questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId)== requiredQuestions.size())){
             throw new QuizzerException("Some required questions do not belong to the quiz", HttpStatus.BAD_REQUEST.value());
         }
@@ -128,6 +131,12 @@ public class QuizService {
         if (!isRequiredQuestionsNotEmpty){
             return String.format(token);
         }
+
+        log.info(
+                "Inserting necessary questions for token: {} , questions: {}",
+                token,
+                requiredQuestions.toString()
+        );
         String sql = "INSERT INTO necessary_questions (id, issued_quiz_token) VALUES (?, ?)";
         try {
             String finalToken = token;
