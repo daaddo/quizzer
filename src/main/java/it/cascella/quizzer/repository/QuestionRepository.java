@@ -112,13 +112,14 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
 
     @Query(
             value = """
-            SELECT CASE WHEN COUNT(q.id) = :#{#requiredQuestions.size()} THEN TRUE ELSE FALSE END
+            SELECT COUNT(*)
             FROM question q
-            WHERE q.quiz_id = :quizId AND q.id IN :#{#requiredQuestions}
+            WHERE q.quiz_id = :quizId AND q.id
+            IN :#{#requiredQuestions}
             """,
             nativeQuery = true
     )
-    boolean assertQuestionsExistsInQuiz(List<Integer> requiredQuestions, Integer quizId);
+    Integer assertQuestionsExistsInQuiz(List<Integer> requiredQuestions, Integer quizId);
 
 
     record CorrectionAnswer(

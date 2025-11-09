@@ -106,7 +106,8 @@ public class QuizService {
             throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
         }
 
-        if(!questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId) ){
+        boolean isRequiredQuestionsNotEmpty = requiredQuestions != null && requiredQuestions.isEmpty();
+        if(isRequiredQuestionsNotEmpty&&!(questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId)== requiredQuestions.size())){
             throw new QuizzerException("Some required questions do not belong to the quiz", HttpStatus.BAD_REQUEST.value());
         }
         String token = tokenGenerator.generateToken(32);
@@ -123,9 +124,10 @@ public class QuizService {
                 numbOfQuestions,
                 isAdditionalInfos
         );
-        IssuedQuiz quiz = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Error generating token", HttpStatus.INTERNAL_SERVER_ERROR.value()));
 
-
+        if (!isRequiredQuestionsNotEmpty){
+            return String.format(token);
+        }
         String sql = "INSERT INTO necessary_questions (id, issued_quiz_token) VALUES (?, ?)";
         try {
             String finalToken = token;
@@ -144,6 +146,8 @@ public class QuizService {
         return String.format(token);
     }
 
+    @Modifying
+    @Transactional
     public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal,AdditionalInfoDTO additionalInfoDTO) throws QuizzerException {
 
         IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.FORBIDDEN.value()));
@@ -185,26 +189,60 @@ public class QuizService {
         }
 
 
-        List<Question> questions = questionRepository.findRandomQuestions(quizInformations.getNumberOfQuestions(),quizInformations.getQuiz().getId(),quizInformations.getIssuer().getId());
+        Integer numberOfQuestions = quizInformations.getNumberOfQuestions();
+
+        List<Object> allByIdIssuedQuizToken = necessaryQuestionRepository.getAllById_IssuedQuizToken(token, numberOfQuestions);
+
+        HashMap<Integer, List<GetQuestionDtoNotCorrected>> map = new HashMap<>();
+        for (Object o : allByIdIssuedQuizToken) {
+            Object[] row = (Object[]) o;
+            Integer questionId = (Integer) row[0];
+            String title = (String) row[1];
+            String questionText = (String) row[2];
+            Boolean multipleChoice = (Long) row[3] != 0;
+            Integer answerId = (Integer) row[4];
+            String answerText = (String) row[6];
+
+            GetAnswerDtoNotCorrected answerDto = new GetAnswerDtoNotCorrected(answerId, answerText);
+
+            map.computeIfAbsent(questionId, k -> new ArrayList<>());
+
+            Optional<GetQuestionDtoNotCorrected> existingQuestionOpt = map.get(questionId).stream()
+                    .filter(q -> q.quizId().equals(questionId))
+                    .findFirst();
+
+            if (existingQuestionOpt.isPresent()) {
+                existingQuestionOpt.get().list().add(answerDto);
+            } else {
+                List<GetAnswerDtoNotCorrected> answersList = new ArrayList<>();
+                answersList.add(answerDto);
+                GetQuestionDtoNotCorrected questionDto = new GetQuestionDtoNotCorrected(
+                        questionId,
+                        title,
+                        questionText,
+                        answersList,
+                        multipleChoice
+                );
+                map.get(questionId).add(questionDto);
+            }
+
+        }
+
+        List <GetQuestionDtoNotCorrected> finalQuestionsList = new ArrayList<>();
+        for (List<GetQuestionDtoNotCorrected> value : map.values()) {
+            finalQuestionsList.addAll(value);
+        }
+
+
         Object[] objects = issuedQuizRepository.getIssuedQuizInfosForUser(token).orElseThrow(() -> new QuizzerException("No quiz info found for token: " + token, HttpStatus.INTERNAL_SERVER_ERROR.value()));
         log.info(objects[0].toString());
         QuizInfos quizInfos = new QuizInfos((Object[]) objects[0]);
 
 
-        HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> map = new HashMap<>();
+        HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> map2 = new HashMap<>();
 
-        map.put(quizInfos,questions.stream()
-                .map(question -> new GetQuestionDtoNotCorrected(
-                        question.getId(),
-                        question.getTitle(),
-                        question.getQuestion(),
-                        question.getAnswers().stream()
-                                .map(answer -> new GetAnswerDtoNotCorrected(answer.getId(), answer.getAnswer() ))
-                                .toList(),
-                        question.getMultipleChoice()  )
-                )
-                .toList());
-        return map;
+        map2.put(quizInfos, finalQuestionsList);
+        return map2;
     }
 
 
