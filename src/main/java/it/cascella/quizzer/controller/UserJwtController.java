@@ -4,9 +4,14 @@ package it.cascella.quizzer.controller;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.service.JwtService;
 import it.cascella.quizzer.service.UserService;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -26,6 +31,7 @@ public class UserJwtController {
     public record LoginRequest(String username, String password) {}
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
+
         String username = loginRequest.username();
         String password = loginRequest.password();
         log.info("Login request received: " + username );

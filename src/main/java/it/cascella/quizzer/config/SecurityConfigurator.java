@@ -2,16 +2,19 @@ package it.cascella.quizzer.config;
 
 
 import it.cascella.quizzer.filters.CsrfCookieFilter;
+import it.cascella.quizzer.filters.JwtCsrfFilter;
 import it.cascella.quizzer.filters.JwtFilter;
 import it.cascella.quizzer.service.CustomOidcUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.filters.CorsFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -24,6 +27,7 @@ import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInit
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -59,19 +63,18 @@ public class SecurityConfigurator {
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
     private final CustomOidcUserService customOidcUserService;
+    private final CsrfCookieFilter csrfCookieFilter;
     private AuthenticationProvider authenticationProvider;
+    private  JwtCsrfFilter jwtCsrfFilter;
 
 
     @Autowired
-    public SecurityConfigurator(JwtFilter jwtFilter, CustomAuthenticationEntryPoint authenticationEntryPoint, CustomOidcUserService customOidcUserService, AuthenticationProvider authenticationProvider) {
+    public SecurityConfigurator(JwtFilter jwtFilter, CustomAuthenticationEntryPoint authenticationEntryPoint, CustomOidcUserService customOidcUserService, CsrfCookieFilter csrfCookieFilter, AuthenticationProvider authenticationProvider) {
         this.jwtFilter = jwtFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.customOidcUserService = customOidcUserService;
+        this.csrfCookieFilter = csrfCookieFilter;
         this.authenticationProvider = authenticationProvider;
-    }
-
-    @Bean
-    SecurityFilterChain SecurityFilterChain(HttpSecurity http) throws Exception {
         CookieCsrfTokenRepository csrfToken =CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfToken.setCookieCustomizer(
                 cookie -> {
@@ -79,16 +82,21 @@ public class SecurityConfigurator {
                     cookie.secure(csrfSecure);
                 }
         );
-        CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
+        this.jwtCsrfFilter = new JwtCsrfFilter(csrfToken);
+
+        this.jwtCsrfFilter.setRequestHandler( new CsrfTokenRequestAttributeHandler());
+    }
+
+    @Bean
+    SecurityFilterChain SecurityFilterChain(HttpSecurity http) throws Exception {
+
+
         http.cors((cors) -> cors.configurationSource(corsConfigurationSource()));
-        http.csrf(csrf -> csrf.csrfTokenRepository(csrfToken)
-                        .csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
-                        .ignoringRequestMatchers(
+        http.csrf(AbstractHttpConfigurer::disable);
 
-                "/api/v1/jwt/user/**"
-        )
+        http.addFilterBefore(jwtCsrfFilter,CsrfFilter.class);
+        http.addFilterAfter(csrfCookieFilter,CsrfFilter.class );
 
-        ).addFilterAfter(new CsrfCookieFilter(),  BasicAuthenticationFilter.class);
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
@@ -106,10 +114,11 @@ public class SecurityConfigurator {
 
         http.logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("/") // dove reindirizzare dopo il logout
+                 // dove reindirizzare dopo il logout
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
-                .deleteCookies("JSESSIONID")
+                .deleteCookies("JSESSIONID","X-XSRF-TOKEN") // elimina i cookie di sessione e CSRF
+                .logoutSuccessHandler((new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK)))
         );
 
         http.sessionManagement(sessionManagement -> sessionManagement
@@ -125,9 +134,9 @@ public class SecurityConfigurator {
         http.oauth2Login(oauth -> oauth
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(customOidcUserService)
+
                 )
                 .defaultSuccessUrl(frontendUrl, true)
-
         );
         http.logout(logout -> logout
 
@@ -137,7 +146,7 @@ public class SecurityConfigurator {
                 .authenticationEntryPoint(authenticationEntryPoint)
         );
         http.httpBasic(withDefaults());
-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtFilter, JwtCsrfFilter.class);
 
 
         return http.build();
