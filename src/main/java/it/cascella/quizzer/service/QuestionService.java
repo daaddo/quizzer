@@ -4,6 +4,7 @@ package it.cascella.quizzer.service;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.Answer;
 import it.cascella.quizzer.entities.Question;
+import it.cascella.quizzer.entities.Quiz;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.repository.QuizRepository;
 import it.cascella.quizzer.entities.Users;
@@ -23,7 +24,7 @@ import java.util.List;
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
-    private  final AnswerRepository answerRepository;
+    private final AnswerRepository answerRepository;
     private final QuizRepository quizRepository;
 
     @Autowired
@@ -35,12 +36,12 @@ public class QuestionService {
 
     @Modifying
     @Transactional
-    public Integer createQuestion(CreateQuestionDto createQuestionDto,Integer userId) throws QuizzerException {
+    public Integer createQuestion(CreateQuestionDto createQuestionDto, Integer userId) throws QuizzerException {
 
         Question question = new Question();
 
         Users users = questionRepository.verifyQuizExistsInUser(createQuestionDto.quizId(), userId)
-                .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " +  userId,HttpStatus.NOT_FOUND.value()));
+                .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + createQuestionDto.quizId() + " for user: " + userId, HttpStatus.NOT_FOUND.value()));
 
         int correctAnswers = 0;
         for (CreateAnswerDto answer : createQuestionDto.answers()) {
@@ -51,7 +52,7 @@ public class QuestionService {
         if (correctAnswers < 1) {
             throw new QuizzerException("At least one correct answer is required", HttpStatus.BAD_REQUEST.value());
         }
-        if (correctAnswers >=2) {
+        if (correctAnswers >= 2) {
             question.setMultipleChoice(true);
         } else {
             question.setMultipleChoice(false);
@@ -72,14 +73,29 @@ public class QuestionService {
         }
 
 
-
         quizRepository.incrementQuestionCount(createQuestionDto.quizId());
         return question.getId();
     }
 
-    public List<GetQuestionDto> getAllQuestions(Integer principal, Integer quizId) {
-        List<Question> questions = questionRepository.findAllFromPrincipal(principal,quizId);
-        return questions.stream()
+    public List<GetQuestionDto> getAllQuestions(Integer principal, Integer quizId) throws QuizzerException {
+        Quiz quiz = quizRepository.getById(quizId).orElseThrow(() -> new QuizzerException("No quiz found with id: " + quizId, HttpStatus.NOT_FOUND.value()));
+
+        if (!quiz.getIsPublic()) {
+            //quiz is private, fetch questions only for the authenticated user
+            List<Question> questions = questionRepository.findAllFromPrincipal(principal, quizId);
+            return questions.stream()
+                    .map(question -> new GetQuestionDto(
+                            question.getId(),
+                            question.getTitle(),
+                            question.getQuestion(),
+                            question.getAnswers().stream()
+                                    .map(answer -> new GetAnswerDto(answer.getId(), answer.getAnswer(), answer.getCorrect()))
+                                    .toList()))
+                    .toList();
+        }
+        // Quiz is public, fetch all questions without user restriction
+        List<Question> allByQuizId = questionRepository.findAllByQuiz_Id(quizId);
+        return allByQuizId.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
                         question.getTitle(),
@@ -88,10 +104,11 @@ public class QuestionService {
                                 .map(answer -> new GetAnswerDto(answer.getId(), answer.getAnswer(), answer.getCorrect()))
                                 .toList()))
                 .toList();
+
     }
 
-        public List<GetQuestionDto> getRandomSetOfQuestions(Integer size,Integer quizId,Integer userId) {
-        List<Question> questions = questionRepository.findRandomQuestions(size,quizId, userId);
+    public List<GetQuestionDto> getRandomSetOfQuestions(Integer size, Integer quizId, Integer userId) {
+        List<Question> questions = questionRepository.findRandomQuestions(size, quizId, userId);
         return questions.stream()
                 .map(question -> new GetQuestionDto(
                         question.getId(),
@@ -115,7 +132,7 @@ public class QuestionService {
     @Modifying
     @Transactional
     public void updateQuestion(PutQuestionDTO putQuestionDTO, Integer principal) {
-        log.info("payload: "+putQuestionDTO);
+        log.info("payload: " + putQuestionDTO);
         questionRepository.findQuestionByIdAndPrincipal(putQuestionDTO.id(), principal)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + putQuestionDTO.id() + " for user: " + principal));
         Integer i = questionRepository.updateQuestion(putQuestionDTO.title(), putQuestionDTO.question(), putQuestionDTO.id());

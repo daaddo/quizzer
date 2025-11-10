@@ -121,8 +121,10 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
     )
     Integer assertQuestionsExistsInQuiz(List<Integer> requiredQuestions, Integer quizId);
 
+  List<Question> findAllByQuiz_Id(Integer quizId);
 
-    record CorrectionAnswer(
+
+  record CorrectionAnswer(
             Integer answerId,
             String answer,
             Boolean isCorrect,

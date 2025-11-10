@@ -106,6 +106,7 @@ public class SecurityConfigurator {
                 .requestMatchers("/api/v1/users/status").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/jwt/user/**").permitAll()
+                .requestMatchers("/api/v1/publicquizz").permitAll()
                 .requestMatchers("/api/v1/users/private","/api/v1/users/privatepost").authenticated()
                 .requestMatchers("/api/v1/**","/logout").authenticated()
         );

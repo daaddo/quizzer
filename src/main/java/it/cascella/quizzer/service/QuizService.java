@@ -1,8 +1,6 @@
 package it.cascella.quizzer.service;
 
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.*;
 import it.cascella.quizzer.repository.*;
@@ -22,7 +20,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -35,8 +32,9 @@ public class QuizService {
     private final UserQuizAttemptRepository userQuizAttemptRepository;
     private final NecessaryQuestionRepository necessaryQuestionRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final PublicQuizInfosRepository publicQuizInfosRepository;
 
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository, NecessaryQuestionRepository necessaryQuestionRepository, JdbcTemplate jdbcTemplate) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository, NecessaryQuestionRepository necessaryQuestionRepository, JdbcTemplate jdbcTemplate, PublicQuizInfosRepository publicQuizInfosRepository) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
@@ -45,6 +43,7 @@ public class QuizService {
         this.userQuizAttemptRepository = userQuizAttemptRepository;
         this.necessaryQuestionRepository = necessaryQuestionRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.publicQuizInfosRepository = publicQuizInfosRepository;
     }
 
     @Transactional
@@ -61,9 +60,16 @@ public class QuizService {
         Quiz quiz = new Quiz();
         quiz.setDescription( newQuiz.description());
         quiz.setTitle(newQuiz.title());
+        quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
 
         quiz.setUserId(userRepository.getUsersById(id));
         quizRepository.save(quiz);
+
+        if (newQuiz.isPublic() != null && newQuiz.isPublic()) {
+            PublicQuizInfos publicQuizInfos = new PublicQuizInfos();
+            publicQuizInfos.setQuiz(quiz);
+            publicQuizInfosRepository.save(publicQuizInfos);
+        }
         return quiz.getId();
     }
 
@@ -71,11 +77,26 @@ public class QuizService {
     @Modifying
     public void updateQuiz(PutQuizDTO newQuiz, Integer id) {
 
-        Integer i = quizRepository.updateQuiz(newQuiz.title(), newQuiz.description(), newQuiz.id(), id);
+        Quiz quiz = quizRepository.getByIdAndUserId_Id(newQuiz.id(), id)
+                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id));
 
-        if (i != 1) {
-            throw new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id);
+        quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
+        if (newQuiz.isPublic() != null ){
+            if (newQuiz.isPublic() && !quiz.getIsPublic()){
+                PublicQuizInfos publicQuizInfos = new PublicQuizInfos();
+                publicQuizInfos.setQuiz(quiz);
+                publicQuizInfosRepository.save(publicQuizInfos);
+
+            } else {
+                if(!quiz.getIsPublic()) {
+                    publicQuizInfosRepository.deleteByQuiz_Id(quiz.getId());
+                }
+            }
         }
+        quiz.setTitle( newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
+        quiz.setDescription(newQuiz.description() != null ? newQuiz.description() : quiz.getDescription());
+        quizRepository.save(quiz);
+
     }
 
 
@@ -283,7 +304,7 @@ public class QuizService {
             throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
         }
 
-        //prendiamo le risposte  dal db
+        //prendiamo le risposte dal db
         List<QuestionRepository.CorrectionAnswer> answersCorrection = questionRepository.getAnswersByQuizId(quizInformations.getQuiz().getId());
         log.trace("Correction answers: {}", answersCorrection.toString());
 

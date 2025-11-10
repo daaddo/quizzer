@@ -1,11 +1,17 @@
 package it.cascella.quizzer.repository;
 
+import it.cascella.quizzer.dtos.PublicQuizDto;
 import it.cascella.quizzer.entities.Quiz;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface QuizRepository extends CrudRepository<Quiz, Integer> {
@@ -67,4 +73,31 @@ public interface QuizRepository extends CrudRepository<Quiz, Integer> {
     Integer updateQuiz(String title, String description, Integer id, Integer id1);
 
     Optional<Quiz> findByIdAndUserId_Id(Integer quizId, Integer id);
+
+    Optional<Quiz> getByIdAndUserId_Id(Integer id, Integer userIdId);
+
+    Optional<Quiz> getById(Integer id);
+
+
+
+
+    @NativeQuery(
+            value = """
+            SELECT              pqi.quiz_id,
+                              pqi.review_count,
+                              pqi.average_rating,
+                              q.title,
+                              q.description,
+                              q.questions_count,
+                              pqi.last_updated
+            FROM public_quiz_infos pqi
+            JOIN quiz q ON pqi.quiz_id = q.id
+            """,
+            sqlResultSetMapping = "PublicQuizDtoMapping",
+            countQuery = """
+            SELECT COUNT(*)
+            FROM public_quiz_infos pq
+"""
+    )
+    Page<PublicQuizDto> findAllPublicQuizzesPaged(String sortCol, Pageable pageable);
 }

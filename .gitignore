@@ -49,4 +49,6 @@ src/main/resources/scripts
 src/main/resources/db/migration/V1_create_users.sql
 src/main/resources/db/migration/V2_checks_and_alter_table.sql
 src/main/resources/db/migration/V3_Add_infos_issued_quiz.sql
+src/main/resources/db/migration/V4_add_mandatory_questions.sql
+src/main/resources/db/migration/V5_Public_Quizzes.sql
 /src/main/resources/ignore/

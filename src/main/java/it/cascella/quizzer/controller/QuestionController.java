@@ -42,7 +42,7 @@ public class QuestionController {
      */
     @GetMapping("/{quizId}")
     public ResponseEntity<List<GetQuestionDto>> getAllQuestions(@AuthenticationPrincipal CustomUserDetails principal  ,
-                                                                @PathVariable Integer quizId) {
+                                                                @PathVariable Integer quizId) throws QuizzerException {
 
         log.info("principal : "+principal.getId());
         return ResponseEntity.ok(questionService.getAllQuestions(principal.getId(),quizId));
