@@ -66,9 +66,8 @@ public class QuizService {
         quizRepository.save(quiz);
 
         if (newQuiz.isPublic() != null && newQuiz.isPublic()) {
-            PublicQuizInfos publicQuizInfos = new PublicQuizInfos();
-            publicQuizInfos.setQuiz(quiz);
-            publicQuizInfosRepository.save(publicQuizInfos);
+            publicQuizInfosRepository.insertNewPublic(quiz.getId());
+
         }
         return quiz.getId();
     }
@@ -79,17 +78,17 @@ public class QuizService {
 
         Quiz quiz = quizRepository.getByIdAndUserId_Id(newQuiz.id(), id)
                 .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id));
-
+        boolean changing = newQuiz.isPublic() != null && newQuiz.isPublic() != quiz.getIsPublic();
         quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
 
         quiz.setTitle( newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
         quiz.setDescription(newQuiz.description() != null ? newQuiz.description() : quiz.getDescription());
         quizRepository.save(quiz);
-        if (newQuiz.isPublic() != null ){
-            if (newQuiz.isPublic() && !quiz.getIsPublic()){
-                PublicQuizInfos publicQuizInfos = new PublicQuizInfos();
-                publicQuizInfos.setQuiz(quiz);
-                publicQuizInfosRepository.save(publicQuizInfos);
+        if (changing ){
+            if (newQuiz.isPublic() ){
+                log.info("{} updated quiz title: {}", quiz.getId(), quiz.getTitle());
+
+                publicQuizInfosRepository.insertNewPublic(quiz.getId());
 
             } else {
                 if(!quiz.getIsPublic()) {

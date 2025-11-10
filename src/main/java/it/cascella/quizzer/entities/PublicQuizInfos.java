@@ -16,7 +16,8 @@ import java.util.Objects;
 @Entity
 @Getter
 @Setter
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "public_quiz_infos")
 public class PublicQuizInfos {
 
@@ -25,6 +26,7 @@ public class PublicQuizInfos {
 
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @MapsId("quiz_id")
     @JoinColumn(name = "quiz_id", nullable = false)
     private Quiz quiz;
 
