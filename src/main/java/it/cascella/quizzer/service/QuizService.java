@@ -81,6 +81,10 @@ public class QuizService {
                 .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id));
 
         quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
+
+        quiz.setTitle( newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
+        quiz.setDescription(newQuiz.description() != null ? newQuiz.description() : quiz.getDescription());
+        quizRepository.save(quiz);
         if (newQuiz.isPublic() != null ){
             if (newQuiz.isPublic() && !quiz.getIsPublic()){
                 PublicQuizInfos publicQuizInfos = new PublicQuizInfos();
@@ -93,10 +97,6 @@ public class QuizService {
                 }
             }
         }
-        quiz.setTitle( newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
-        quiz.setDescription(newQuiz.description() != null ? newQuiz.description() : quiz.getDescription());
-        quizRepository.save(quiz);
-
     }
 
 

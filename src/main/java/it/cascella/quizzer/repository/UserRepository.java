@@ -30,7 +30,7 @@ public interface UserRepository extends CrudRepository<Users, Long> {
 
     @Query(
             value = """
-                    SELECT q.id AS id, q.title AS title, q.description AS description, q.questions_count AS questionCount
+                    SELECT q.id AS id, q.title AS title, q.description AS description, q.questions_count AS questionCount, q.is_public AS isPublic
                     FROM quiz q
                     WHERE q.user_id = :id
                     """,

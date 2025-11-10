@@ -16,16 +16,16 @@ import java.util.Objects;
 @Entity
 @Getter
 @Setter
-@ToString
 @RequiredArgsConstructor
 @Table(name = "public_quiz_infos")
 public class PublicQuizInfos {
 
-    @MapsId
+    @EmbeddedId
+    private PublicQuizInfosId id;
+
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "quiz_id", nullable = false)
-    @Id
-    @ToString.Exclude
     private Quiz quiz;
 
     @NotNull
