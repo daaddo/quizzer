@@ -89,3 +89,5 @@ CREATE TABLE IF NOT EXISTS user_quiz_attempt (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (token) REFERENCES issued_quiz(token_id) ON DELETE CASCADE
 );
+
+select * from user_quiz_attempt;

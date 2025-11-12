@@ -13,7 +13,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 
 
 @Getter
@@ -39,7 +40,7 @@ public class UserQuizAttempt {
 
     @NotNull
     @Column(name = "score", nullable = false)
-    private Integer score;
+    private Double score;
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "attempted_at")
     private LocalDateTime attemptedAt;
@@ -49,7 +50,8 @@ public class UserQuizAttempt {
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "questions", nullable = false)
-    private Map<Integer, AnswerResponse> questions;
+    private List< Object> questions;
+
     @NotNull
     @ColumnDefault("'IN_PROGRESS'")
     @Enumerated(EnumType.STRING)

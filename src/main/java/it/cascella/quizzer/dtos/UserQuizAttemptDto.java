@@ -11,7 +11,7 @@ public record UserQuizAttemptDto(
         Integer id,
         Integer userId,
         byte[] token,
-        Integer score,
+        Double score,
         Timestamp attemptedAt,
         Timestamp finishedAt,
         String status,

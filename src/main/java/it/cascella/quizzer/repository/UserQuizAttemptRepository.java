@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +35,7 @@ public interface UserQuizAttemptRepository extends CrudRepository<UserQuizAttemp
             """,
             nativeQuery = true
     )
-    Integer updateUserQuizAttempt(Integer score, String finishedAt, String questions, Integer userId, String issuedQuizId);
+    Integer updateUserQuizAttempt(Double score, LocalDateTime finishedAt, String questions, Integer userId, String issuedQuizId);
 
     @Query(
             value = """

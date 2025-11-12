@@ -96,4 +96,5 @@ public interface IssuedQuizRepository extends CrudRepository<IssuedQuiz, Long> {
             nativeQuery = true
     )
     Optional<Boolean> isAdditionalInformationRequired(String tokenId);
+
 }

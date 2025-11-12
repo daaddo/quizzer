@@ -130,15 +130,16 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
             Boolean isCorrect,
             Integer questionId,
             String questionTitle,
+            String questionDescription,
             Boolean isMultipleChoice,
             Integer userId
     ) {}
     @Query(value = """
-    SELECT a.id, a.answer, a.is_correct, q.id, title, is_multiple_choice, user_id
+    SELECT a.id, a.answer, a.is_correct, q.id, title,q.question, is_multiple_choice, user_id
     FROM answer a
     JOIN question q ON a.question_id = q.id
-    WHERE q.quiz_id = :quizId
-    ORDER BY a.question_id, a.is_correct;
+    WHERE q.quiz_id = :quizId 
+    ORDER BY a.question_id;
 """
             ,nativeQuery = true
     )

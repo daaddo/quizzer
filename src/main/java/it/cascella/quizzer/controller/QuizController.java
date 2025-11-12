@@ -1,8 +1,13 @@
 package it.cascella.quizzer.controller;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import it.cascella.quizzer.service.QuizService;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +81,44 @@ throws QuizzerException {
 
 
 
+    public record QuizInfosDto(
+            Integer quizId,
+            String title,
+            String description,
+            List<DomandaDTO> domande
+    ) {}
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DomandaDTO {
+        private String titolo;
+        private String descrizione;
+        private List<RispostaDTO> risposte;
+    }
+
+    public record RispostaDTO(
+            String testo,
+            boolean corretta,
+            boolean chosen
+    ) {}
+    @PostMapping("/postPrivateAnswers")
+    public ResponseEntity<String> submitAnswersInQuiz(@RequestBody QuizInfosDto submitAnswers,
+                                                      @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Submitting answers for quiz {} by user {}", submitAnswers.quizId, principal.getUsername());
+        quizService.submitAnswersInQuiz(
+                submitAnswers,
+                principal);
+        return ResponseEntity.ok("Answers submitted successfully");
+    }
+    @GetMapping("/getPrivateAnswers")
+    public ResponseEntity<QuizInfosDto> getAnswersInQuiz(@AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+        log.info("Fetching answers for user {}", principal.getUsername());
+
+
+        QuizInfosDto quizInfosDto = quizService.getQuizResults(principal);
+        return ResponseEntity.ok(null);
+    }
 
     @PostMapping("/random")
     public ResponseEntity<HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>>> getRandomSetOfQuestions
@@ -95,7 +138,7 @@ throws QuizzerException {
     public ResponseEntity<HashMap<Integer, AnswerResponse>> submitAnswers(
             @RequestParam String token,
             @RequestBody HashMap<Integer,List<Integer>> answers,
-            @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+            @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException, JsonProcessingException {
         log.info("Submitting answers for token: {}", token);
         HashMap<Integer, AnswerResponse> answersByUser = new HashMap<>();
         for (Map.Entry<Integer, List<Integer>> integerListEntry : answers.entrySet()) {
@@ -115,16 +158,16 @@ throws QuizzerException {
      *   "questions": {"3": {"correctOptions": [7], "selectedOptions": []}, ...}
      * }
      */
-    record QuestionsByTokenRequest(
+    public record QuestionsByTokenRequest(
             String token,
-            Map<Integer, AnswerResponse> questions
+            Integer user_id
     ) {}
 
     @PostMapping("/questions-by-token")
-    public ResponseEntity<List<GetQuestionDto>> getQuestionsByToken(@RequestBody QuestionsByTokenRequest request,
-                                                                    @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<List<Object>> getQuestionsByToken(@RequestBody QuestionsByTokenRequest request,
+                                                                   @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         return ResponseEntity.ok(
-                quizService.getQuestionsForToken(request.token(), request.questions(), principal)
+                quizService.getQuestionsForToken(request, principal)
         );
     }
 

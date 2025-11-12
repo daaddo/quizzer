@@ -22,7 +22,8 @@ import java.time.LocalDateTime;
                         @ColumnResult(name = "title", type = String.class),
                         @ColumnResult(name = "description", type = String.class),
                         @ColumnResult(name = "questions_count", type = Integer.class),
-                        @ColumnResult(name = "last_updated", type = LocalDateTime.class)
+                        @ColumnResult(name = "last_updated", type = LocalDateTime.class),
+                        @ColumnResult(name = "author_username", type = String.class)
                 }
         )
 )

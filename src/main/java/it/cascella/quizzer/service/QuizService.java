@@ -1,6 +1,9 @@
 package it.cascella.quizzer.service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.cascella.quizzer.controller.QuizController;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.*;
 import it.cascella.quizzer.repository.*;
@@ -20,6 +23,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -33,8 +37,10 @@ public class QuizService {
     private final NecessaryQuestionRepository necessaryQuestionRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PublicQuizInfosRepository publicQuizInfosRepository;
+    private final QuizResultsRepository quizResultsRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository, NecessaryQuestionRepository necessaryQuestionRepository, JdbcTemplate jdbcTemplate, PublicQuizInfosRepository publicQuizInfosRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository, TokenGenerator tokenGenerator, QuestionRepository questionRepository, IssuedQuizRepository issuedQuizRepository, UserQuizAttemptRepository userQuizAttemptRepository, NecessaryQuestionRepository necessaryQuestionRepository, JdbcTemplate jdbcTemplate, PublicQuizInfosRepository publicQuizInfosRepository, QuizResultsRepository quizResultsRepository) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
@@ -44,6 +50,7 @@ public class QuizService {
         this.necessaryQuestionRepository = necessaryQuestionRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.publicQuizInfosRepository = publicQuizInfosRepository;
+        this.quizResultsRepository = quizResultsRepository;
     }
 
     @Transactional
@@ -54,13 +61,14 @@ public class QuizService {
             throw new RuntimeException("Quiz not found with id: " + id + " for user: " + userId);
         }
     }
+
     @Transactional
     @Modifying
     public Integer insertQuiz(NewQuizDTO newQuiz, Integer id) {
         Quiz quiz = new Quiz();
-        quiz.setDescription( newQuiz.description());
+        quiz.setDescription(newQuiz.description());
         quiz.setTitle(newQuiz.title());
-        quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
+        quiz.setIsPublic(newQuiz.isPublic() != null ? newQuiz.isPublic() : false);
 
         quiz.setUserId(userRepository.getUsersById(id));
         quizRepository.save(quiz);
@@ -79,25 +87,24 @@ public class QuizService {
         Quiz quiz = quizRepository.getByIdAndUserId_Id(newQuiz.id(), id)
                 .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + newQuiz.id() + " for user: " + id));
         boolean changing = newQuiz.isPublic() != null && newQuiz.isPublic() != quiz.getIsPublic();
-        quiz.setIsPublic(newQuiz.isPublic()!= null ? newQuiz.isPublic() : false);
+        quiz.setIsPublic(newQuiz.isPublic() != null ? newQuiz.isPublic() : false);
 
-        quiz.setTitle( newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
+        quiz.setTitle(newQuiz.title() != null ? newQuiz.title() : quiz.getTitle());
         quiz.setDescription(newQuiz.description() != null ? newQuiz.description() : quiz.getDescription());
         quizRepository.save(quiz);
-        if (changing ){
-            if (newQuiz.isPublic() ){
+        if (changing) {
+            if (newQuiz.isPublic()) {
                 log.info("{} updated quiz title: {}", quiz.getId(), quiz.getTitle());
 
                 publicQuizInfosRepository.insertNewPublic(quiz.getId());
 
             } else {
-                if(!quiz.getIsPublic()) {
+                if (!quiz.getIsPublic()) {
                     publicQuizInfosRepository.deleteByQuiz_Id(quiz.getId());
                 }
             }
         }
     }
-
 
 
     @Transactional
@@ -111,31 +118,31 @@ public class QuizService {
             List<Integer> requiredQuestions,
             CustomUserDetails details
     ) throws QuizzerException {
-        if ( requiredQuestions != null && requiredQuestions.size() > numbOfQuestions ) {
+        if (requiredQuestions != null && requiredQuestions.size() > numbOfQuestions) {
             throw new QuizzerException("Number of required questions cannot be greater than total number of questions", HttpStatus.BAD_REQUEST.value());
         }
         // Check if the quiz exists and belongs to the user
         quizRepository.findByIdAndUserId_Id(quizId, details.getId())
                 .orElseThrow(() -> new QuizzerException("Quiz not found with id: " + quizId + " for user: " + details.getUsername(), HttpStatus.NOT_FOUND.value()));
-        if (expirationDate!=null && expirationDate.isBefore(LocalDateTime.now())) {
+        if (expirationDate != null && expirationDate.isBefore(LocalDateTime.now())) {
             throw new QuizzerException("Expiration date must be in the future", HttpStatus.BAD_REQUEST.value());
         }
 
-        if (duration.toLocalTime().isBefore(LocalTime.of(0,1))) {
+        if (duration.toLocalTime().isBefore(LocalTime.of(0, 1))) {
             throw new QuizzerException("Duration must be at least 1 minute", HttpStatus.BAD_REQUEST.value());
         }
 
-        if (expirationDate != null &&LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))){
+        if (expirationDate != null && LocalDateTime.now().plusSeconds(duration.toLocalTime().toSecondOfDay()).isAfter(expirationDate.minus(Duration.ofMinutes(1)))) {
             throw new QuizzerException("The duration is too long for the expiration date", HttpStatus.BAD_REQUEST.value());
         }
 
-        boolean isRequiredQuestionsNotEmpty =requiredQuestions != null&&! requiredQuestions.isEmpty();
-        if(isRequiredQuestionsNotEmpty&&!(questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId)== requiredQuestions.size())){
+        boolean isRequiredQuestionsNotEmpty = requiredQuestions != null && !requiredQuestions.isEmpty();
+        if (isRequiredQuestionsNotEmpty && !(questionRepository.assertQuestionsExistsInQuiz(requiredQuestions, quizId) == requiredQuestions.size())) {
             throw new QuizzerException("Some required questions do not belong to the quiz", HttpStatus.BAD_REQUEST.value());
         }
         String token = tokenGenerator.generateToken(32);
         log.info("Generated token: {}", token);
-        while (issuedQuizRepository.getByTokenId(token).isPresent()){
+        while (issuedQuizRepository.getByTokenId(token).isPresent()) {
             token = tokenGenerator.generateToken(32);
         }
         issuedQuizRepository.insertIssuedQuiz(
@@ -148,7 +155,7 @@ public class QuizService {
                 isAdditionalInfos
         );
 
-        if (!isRequiredQuestionsNotEmpty){
+        if (!isRequiredQuestionsNotEmpty) {
             return String.format(token);
         }
 
@@ -170,32 +177,30 @@ public class QuizService {
         }
 
 
-
-
         return String.format(token);
     }
 
     @Modifying
     @Transactional
-    public HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal,AdditionalInfoDTO additionalInfoDTO) throws QuizzerException {
+    public HashMap<QuizInfos, List<GetQuestionDtoNotCorrected>> getQuestionFromToken(String token, CustomUserDetails principal, AdditionalInfoDTO additionalInfoDTO) throws QuizzerException {
 
         IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid or expired token", HttpStatus.FORBIDDEN.value()));
-        if(userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()){
+        if (userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId()).isPresent()) {
             throw new QuizzerException("User has already requested the quiz", HttpStatus.FORBIDDEN.value());
         }
         // check if the quiz has expired
-        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
+        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
         }
         // check if the quiz requires additional information and if the user hasn't provided it
 
-        if(quizInformations.getRequiredDetails() &&(
+        if (quizInformations.getRequiredDetails() && (
                 (
                         additionalInfoDTO == null ||
-                                (additionalInfoDTO.surname()== null || additionalInfoDTO.surname().isBlank()) ||
-                                (additionalInfoDTO.user_name()==null || additionalInfoDTO.user_name().isBlank())
+                                (additionalInfoDTO.surname() == null || additionalInfoDTO.surname().isBlank()) ||
+                                (additionalInfoDTO.user_name() == null || additionalInfoDTO.user_name().isBlank())
                 )
-        )){
+        )) {
             throw new QuizzerException("Additional information required", HttpStatus.BAD_REQUEST.value());
         }
         if (additionalInfoDTO != null) {
@@ -203,11 +208,10 @@ public class QuizService {
                     principal.getId(),
                     token,
                     additionalInfoDTO.user_name() == null ? null : additionalInfoDTO.user_name(),
-                    additionalInfoDTO.surname()== null? null : additionalInfoDTO.surname(),
-                    additionalInfoDTO.middleName()== null ? null : additionalInfoDTO.middleName()
+                    additionalInfoDTO.surname() == null ? null : additionalInfoDTO.surname(),
+                    additionalInfoDTO.middleName() == null ? null : additionalInfoDTO.middleName()
             );
-        }
-        else{
+        } else {
             userQuizAttemptRepository.insertIssuedQuiz(
                     principal.getId(),
                     token,
@@ -257,7 +261,7 @@ public class QuizService {
 
         }
 
-        List <GetQuestionDtoNotCorrected> finalQuestionsList = new ArrayList<>();
+        List<GetQuestionDtoNotCorrected> finalQuestionsList = new ArrayList<>();
         for (List<GetQuestionDtoNotCorrected> value : map.values()) {
             finalQuestionsList.addAll(value);
         }
@@ -268,36 +272,33 @@ public class QuizService {
         QuizInfos quizInfos = new QuizInfos((Object[]) objects[0]);
 
 
-        HashMap<QuizInfos,List<GetQuestionDtoNotCorrected>> map2 = new HashMap<>();
+        HashMap<QuizInfos, List<GetQuestionDtoNotCorrected>> map2 = new HashMap<>();
 
         map2.put(quizInfos, finalQuestionsList);
         return map2;
     }
 
 
-
     @Transactional
     @Modifying
-    public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer,AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException {
-        //todo add protection to check if question_id belongs to the quiz
-
+    public HashMap<Integer, AnswerResponse> submitAnswers(String token, HashMap<Integer, AnswerResponse> answersByUser, CustomUserDetails principal) throws QuizzerException, JsonProcessingException {
         log.info("Submitting answers for token: {}, answers: {}", token, answersByUser.toString());
         IssuedQuiz quizInformations = issuedQuizRepository.getByTokenId(token).orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
 
         Optional<UserQuizAttempt> byTokenAndUserId = userQuizAttemptRepository.getByTokenAndUser_Id(token, principal.getId());
-        if (byTokenAndUserId.isEmpty()){
+        if (byTokenAndUserId.isEmpty()) {
             throw new QuizzerException("User has not started the quiz", HttpStatus.FORBIDDEN.value());
         }
-        if (byTokenAndUserId.get().getStatus().equals(ProgressStatus.COMPLETED)){
+        if (byTokenAndUserId.get().getStatus().equals(ProgressStatus.COMPLETED)) {
             throw new QuizzerException("User has already submitted the quiz", HttpStatus.FORBIDDEN.value());
         }
         // controlliamo se il tempo di consegna del quiz è nella durata del quiz se no lo settiamo a scaduto diamo 10 secondi in più per evitare problemi di latenza
-        if (byTokenAndUserId.get().getAttemptedAt().plusSeconds(quizInformations.getDuration().toLocalTime().toSecondOfDay()).plusSeconds(10).isBefore(LocalDateTime.now())){
+        if (byTokenAndUserId.get().getAttemptedAt().plusSeconds(quizInformations.getDuration().toLocalTime().toSecondOfDay()).plusSeconds(10).isBefore(LocalDateTime.now())) {
             byTokenAndUserId.get().setStatus(ProgressStatus.EXPIRED);
             userQuizAttemptRepository.save(byTokenAndUserId.get());
             throw new QuizzerException("Time is up! Quiz expired", HttpStatus.FORBIDDEN.value());
         }
-        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())){
+        if (quizInformations.getExpiresAt() != null && quizInformations.getExpiresAt().isBefore(LocalDateTime.now())) {
             byTokenAndUserId.get().setStatus(ProgressStatus.EXPIRED);
             userQuizAttemptRepository.save(byTokenAndUserId.get());
             throw new QuizzerException("Quiz expired", HttpStatus.FORBIDDEN.value());
@@ -307,38 +308,113 @@ public class QuizService {
         List<QuestionRepository.CorrectionAnswer> answersCorrection = questionRepository.getAnswersByQuizId(quizInformations.getQuiz().getId());
         log.trace("Correction answers: {}", answersCorrection.toString());
 
+        HashMap<Integer, QuizController.DomandaDTO> map = new HashMap<>();
+        //TODO Migliorare questo pezzo di codice che è un po' brutto
         for (QuestionRepository.CorrectionAnswer answer : answersCorrection) {
-            if (!answer.isCorrect()){
-                continue;
-            }
             if (answersByUser.containsKey(answer.questionId())) {
-                AnswerResponse answered = answersByUser.get(answer.questionId());
-                answered.getCorrectOptions().add(answer.answerId());
-                answersByUser.put(answer.questionId(), answered);
+                if (!answer.isCorrect()) {
+                    map.computeIfPresent(answer.questionId(), (k, v) -> {
+                        v.getRisposte().add(
+                                new QuizController.RispostaDTO(
+                                        answer.answer(),
+                                        false,
+                                        answersByUser.get(answer.questionId()).getSelectedOptions().contains(answer.answerId()
+                                        )
+                                )
+                        );
+                        return v;
+                    });
+                    map.putIfAbsent(answer.questionId(),
+                            new QuizController.DomandaDTO(
+                                    answer.questionTitle(),
+                                    answer.questionDescription(),
+                                    new ArrayList<>(List.of(
+                                            new QuizController.RispostaDTO(
+                                                    answer.answer(),
+                                                    false,
+                                                    answersByUser.get(answer.questionId()).getSelectedOptions().contains(answer.answerId()
+                                                    )
+                                            )
+                                    ))
+                            )
+                    );
+
+                }else {
+                    map.computeIfPresent(answer.questionId(), (k, v) -> {
+                        v.getRisposte().add(
+                                new QuizController.RispostaDTO(
+                                        answer.answer(),
+                                        true,
+                                        answersByUser.get(answer.questionId()).getSelectedOptions().contains(answer.answerId()
+                                        )
+                                )
+                        );
+                        return v;
+                    });
+                    map.putIfAbsent(answer.questionId(),
+                            new QuizController.DomandaDTO(
+                                    answer.questionTitle(),
+                                    answer.questionDescription(),
+                                    new ArrayList<>(List.of(
+                                            new QuizController.RispostaDTO(
+                                                    answer.answer(),
+                                                    true,
+                                                    answersByUser.get(answer.questionId()).getSelectedOptions().contains(answer.answerId()
+                                                    )
+                                            )
+                                    ))
+                            )
+                    );
+
+                    AnswerResponse answered = answersByUser.get(answer.questionId());
+                    answered.getCorrectOptions().add(answer.answerId());
+                    answersByUser.put(answer.questionId(), answered);
+                }
+
             }
         }
-        byTokenAndUserId.get().setStatus(ProgressStatus.COMPLETED);
-        byTokenAndUserId.get().setFinishedAt(LocalDateTime.now());
-        byTokenAndUserId.get().setQuestions(answersByUser);
-        byTokenAndUserId.get().setScore(calculateScore(answersByUser));
-        userQuizAttemptRepository.save(byTokenAndUserId.get());
+
+        log.info("Final answers map: {}", map.toString());
+
+        userQuizAttemptRepository.updateUserQuizAttempt(calculateScore(map),LocalDateTime.now(),objectMapper.writeValueAsString(map), principal.getId(),token);
+
+        try {
+            quizResultsRepository.saveNewQuizInfos(
+                    quizInformations.getQuiz().getId(),
+                    principal.getId(),
+                    byTokenAndUserId.get().getScore(),
+                    objectMapper.writeValueAsString(map.values()),
+                    token
+            );
+        } catch (JsonProcessingException e) {
+            throw new QuizzerException("Error processing JSON", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        }
 
         return answersByUser;
     }
 
-    private @NotNull Integer calculateScore(HashMap<Integer, AnswerResponse> answersByUser) {
-        int score = 0;
-        for (Map.Entry<Integer, AnswerResponse> entry : answersByUser.entrySet()) {
-            AnswerResponse answerResponse = entry.getValue();
-            Set<Integer> userAnswers = new HashSet<>(answerResponse.getSelectedOptions());
-            Set<Integer> correctAnswers = new HashSet<>(answerResponse.getCorrectOptions());
-            if (userAnswers.equals(correctAnswers)) {
-                score++;
-            }
+
+
+    public double calculateScore(Map<Integer, AnswerResponse> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return 0.0;
         }
 
-        return score;
+        long totalQuestions = answers.size();
+        long correctCount = answers.values().stream()
+                .filter(answer -> {
+                    // crea copie ordinate per confrontare indipendentemente dall'ordine
+                    List<Integer> selected = new ArrayList<>(answer.getSelectedOptions());
+                    List<Integer> correct = new ArrayList<>(answer.getCorrectOptions());
+                    Collections.sort(selected);
+                    Collections.sort(correct);
+                    return selected.equals(correct);
+                })
+                .count();
+
+        return (double) correctCount / totalQuestions * 100.0;
     }
+
 
     @Transactional
     @Modifying
@@ -402,35 +478,62 @@ public class QuizService {
         }
     }
 
-    public List<GetQuestionDto> getQuestionsForToken(String token, Map<Integer, AnswerResponse> questionsPayload, CustomUserDetails principal) throws QuizzerException {
-        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(token)
+    public List<Object> getQuestionsForToken(QuizController.QuestionsByTokenRequest request, CustomUserDetails principal) throws QuizzerException {
+        IssuedQuiz issuedQuiz = issuedQuizRepository.getByTokenId(request.token())
                 .orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
         if (!issuedQuiz.getIssuer().getId().equals(principal.getId())) {
             throw new QuizzerException("Forbidden: not the issuer", HttpStatus.FORBIDDEN.value());
         }
-
-        Integer quizId = issuedQuiz.getQuiz().getId();
-        List<Integer> requestedQuestionIds = new ArrayList<>(questionsPayload.keySet());
-        if (requestedQuestionIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Question> questions = questionRepository.findByIdsInForQuiz(requestedQuestionIds, quizId);
-        if (questions.size() != requestedQuestionIds.size()) {
-            throw new QuizzerException("Some questions do not belong to the quiz", HttpStatus.FORBIDDEN.value());
-        }
-
-        return questions.stream().map(q -> new GetQuestionDto(
-                q.getId(),
-                q.getTitle(),
-                q.getQuestion(),
-                q.getAnswers().stream()
-                        .map(a -> new GetAnswerDto(a.getId(), a.getAnswer(), a.getCorrect()))
-                        .toList()
-        )).toList();
+        
+        return userQuizAttemptRepository.getByTokenAndUser_Id(request.token(), request.user_id())
+                .orElseThrow(() -> new QuizzerException("No quiz attempt found for the given token and user", HttpStatus.NOT_FOUND.value()))
+                .getQuestions();
     }
 
     public Boolean doesRequireDetails(String token) throws QuizzerException {
-        return issuedQuizRepository.isAdditionalInformationRequired(token).orElseThrow(()-> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+        return issuedQuizRepository.isAdditionalInformationRequired(token).orElseThrow(() -> new QuizzerException("Invalid token", HttpStatus.BAD_REQUEST.value()));
+    }
+
+    public void submitAnswersInQuiz(QuizController.QuizInfosDto submitAnswers, CustomUserDetails principal) throws QuizzerException {
+        log.info("Submitting answers for quiz {} by user {}", submitAnswers.quizId(), principal.getUsername());
+        // Implementation goes here
+        try {
+            quizResultsRepository.saveNewQuizInfos(submitAnswers.quizId(),
+                    principal.getId(),
+                    calculateScore(submitAnswers),
+                    objectMapper.writeValueAsString(submitAnswers.domande()),
+                    null
+            );
+        } catch (JsonProcessingException e) {
+            log.error("ERROR PARSING JSON {}, FULL STACKTRACE: {}", e.getMessage(), e.getStackTrace());
+            throw new QuizzerException("Error processing JSON", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        }
+    }
+
+    private double calculateScore(QuizController.QuizInfosDto quiz) {
+        long total = quiz.domande().size();
+        long correct = quiz.domande().stream()
+                .filter(d -> d.getRisposte().stream().anyMatch(r -> r.corretta() && r.chosen()))
+                .count();
+        return (double) correct / total * 100.0;
+    }
+    private double calculateScore(HashMap<Integer, QuizController.DomandaDTO> quiz) {
+        if (quiz == null || quiz.isEmpty()) {
+            return 0.0;
+        }
+
+        long total = quiz.size();
+        long correct = quiz.values().stream()
+                .filter(d -> d.getRisposte() != null &&
+                        d.getRisposte().stream().anyMatch(r -> r.corretta() && r.chosen()))
+                .count();
+
+        return (double) correct / total * 100.0;
+    }
+
+
+    public QuizController.QuizInfosDto getQuizResults(CustomUserDetails principal) {
+        List<QuizInfosResponse> allByUserId = quizResultsRepository.getAllByUser_Id(principal.getId());
+        List<QuizInfosResponse> domande = new ArrayList<>();
     }
 }

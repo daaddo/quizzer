@@ -89,9 +89,11 @@ public interface QuizRepository extends CrudRepository<Quiz, Integer> {
                               q.title,
                               q.description,
                               q.questions_count,
-                              pqi.last_updated
+                              pqi.last_updated,
+                              u.username as author_username
             FROM public_quiz_infos pqi
             JOIN quiz q ON pqi.quiz_id = q.id
+            JOIN quizzer.users u on u.id = q.user_id
             """,
             sqlResultSetMapping = "PublicQuizDtoMapping",
             countQuery = """

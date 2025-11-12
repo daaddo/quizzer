@@ -15,7 +15,8 @@ public record PublicQuizDto(
     String title,
     String description,
     Integer questionsCount,
-    LocalDateTime lastUpdated
+    LocalDateTime lastUpdated,
+    String authorUsername
 ) {
 
 }
