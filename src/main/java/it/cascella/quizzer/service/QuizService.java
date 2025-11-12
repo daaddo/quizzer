@@ -9,7 +9,6 @@ import it.cascella.quizzer.entities.*;
 import it.cascella.quizzer.repository.*;
 import it.cascella.quizzer.exceptions.QuizzerException;
 import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.Modifying;
@@ -23,7 +22,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -532,8 +530,7 @@ public class QuizService {
     }
 
 
-    public QuizController.QuizInfosDto getQuizResults(CustomUserDetails principal) {
-        List<QuizInfosResponse> allByUserId = quizResultsRepository.getAllByUser_Id(principal.getId());
-        List<QuizInfosResponse> domande = new ArrayList<>();
+    public List<QuizInfosResponse> getQuizResults(CustomUserDetails principal) {
+        return quizResultsRepository.getAllByUser_Id(principal.getId());
     }
 }

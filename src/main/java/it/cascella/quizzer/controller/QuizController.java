@@ -112,12 +112,9 @@ throws QuizzerException {
         return ResponseEntity.ok("Answers submitted successfully");
     }
     @GetMapping("/getPrivateAnswers")
-    public ResponseEntity<QuizInfosDto> getAnswersInQuiz(@AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
+    public ResponseEntity<List<QuizInfosResponse>> getAnswersInQuiz(@AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("Fetching answers for user {}", principal.getUsername());
-
-
-        QuizInfosDto quizInfosDto = quizService.getQuizResults(principal);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(quizService.getQuizResults(principal));
     }
 
     @PostMapping("/random")

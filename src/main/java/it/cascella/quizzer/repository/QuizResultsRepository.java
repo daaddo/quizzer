@@ -38,7 +38,7 @@ public interface QuizResultsRepository extends CrudRepository<QuizResults, Integ
 
     @NativeQuery(
             """
-        SELECT 
+        SELECT
         qr.quiz_id AS quizResultId,
         q.title AS quizTitle,
         q.description AS quizDescription,
