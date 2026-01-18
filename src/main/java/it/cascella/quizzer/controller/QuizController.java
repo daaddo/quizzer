@@ -1,5 +1,7 @@
 package it.cascella.quizzer.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.cascella.quizzer.aop.logging.LogArgs;
+import it.cascella.quizzer.aop.logging.LogTime;
 import it.cascella.quizzer.dtos.*;
 import it.cascella.quizzer.entities.CustomUserDetails;
 import it.cascella.quizzer.exceptions.QuizzerException;
@@ -65,7 +67,10 @@ throws QuizzerException {
             Boolean requiredDetails,
             List<Integer> requiredQuestions
     ) {}
+
     @PostMapping("/link")
+    @LogTime
+    @LogArgs
     public ResponseEntity<String> generateLink(@RequestBody LinkRequest params, @AuthenticationPrincipal CustomUserDetails principal) throws QuizzerException {
         log.info("generating link for quiz {} for user {}",  params.quizId, principal.getUsername());
         String token= quizService.generateLink(

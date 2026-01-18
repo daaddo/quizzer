@@ -1,4 +1,4 @@
-FROM openjdk:25
+FROM maven:3.9-eclipse-temurin-25
 
 # Definisci la directory di lavoro all'interno del container
 WORKDIR /app

@@ -49,14 +49,7 @@ public class JwtFilter extends OncePerRequestFilter {
             jwtToken = authHeader.substring(7);
             String username = jwtService.extractUsername(jwtToken);
             log.info("Token is valid for user "+username);
-            CustomUserDetails user;
-            try {
-                user = jwtService.getUser(username);
-            } catch (UsernameNotFoundException e) {
-                log.error("User not found: "+username);
-                filterChain.doFilter(request, response);
-                return;
-            }
+
             request.setAttribute("skipCSRF", Boolean.TRUE);
             log.info("User found: "+user.getUsername()+" with id "+user.getId());
             UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
